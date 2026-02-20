@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:circlo_app/widgets/my_button.dart';
+import 'package:circlo_app/widgets/my_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -41,158 +43,139 @@ class _SignupPageState extends State<SignupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Flexible(child: Container(), flex: 2),
-              // Circlo Text Logo
-              const Text(
-                'Circlo',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 64,
-                  fontWeight: FontWeight.w300,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Profile Image Picker
-              Stack(
-                children: [
-                  _image != null
-                      ? CircleAvatar(
-                          radius: 64,
-                          backgroundImage: FileImage(_image!),
-                        )
-                      : const CircleAvatar(
-                          radius: 64,
-                          backgroundImage: NetworkImage(
-                            'https://i.stack.imgur.com/l60Hf.png',
-                          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Spacer(flex: 2),
+                        // Circlo Text Logo
+                        Text(
+                          'Circlo',
+                          style: Theme.of(context).textTheme.displayLarge
+                              ?.copyWith(
+                                color: Theme.of(context).primaryColor,
+                                fontSize: 64,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
-                  Positioned(
-                    bottom: -10,
-                    left: 80,
-                    child: IconButton(
-                      onPressed: _selectImage,
-                      icon: const Icon(Icons.add_a_photo),
+                        const SizedBox(height: 24),
+
+                        // Profile Image Picker
+                        Stack(
+                          children: [
+                            _image != null
+                                ? CircleAvatar(
+                                    radius: 64,
+                                    backgroundImage: FileImage(_image!),
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).inputDecorationTheme.fillColor,
+                                  )
+                                : CircleAvatar(
+                                    radius: 64,
+                                    backgroundImage: const NetworkImage(
+                                      'https://i.stack.imgur.com/l60Hf.png', // Default avatar
+                                    ),
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).inputDecorationTheme.fillColor,
+                                  ),
+                            Positioned(
+                              bottom: -10,
+                              left: 80,
+                              child: IconButton(
+                                onPressed: _selectImage,
+                                icon: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).primaryColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.add_a_photo,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 48),
+
+                        // Email Input
+                        MyTextField(
+                          controller: _emailController,
+                          hintText: 'Enter your email',
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Username Input
+                        MyTextField(
+                          controller: _usernameController,
+                          hintText: 'Create a username',
+                          keyboardType: TextInputType.text,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Password Input
+                        MyTextField(
+                          controller: _passwordController,
+                          hintText: 'Create a password',
+                          obscureText: true,
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Sign Up Button
+                        MyButton(text: 'Sign up', onTap: () {}),
+                        const SizedBox(height: 12),
+
+                        const Spacer(flex: 2),
+
+                        // Transition to Log In
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              child: const Text("Already have an account?"),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                context.go('/login');
+                              },
+                              child: Container(
+                                child: Text(
+                                  " Log in now",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.secondary,
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 64),
-
-              // Email Input
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  hintText: 'Email',
-                  border: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  filled: true,
-                  contentPadding: const EdgeInsets.all(8),
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 24),
-
-              // Username Input
-              TextField(
-                controller: _usernameController,
-                decoration: InputDecoration(
-                  hintText: 'Username',
-                  border: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  filled: true,
-                  contentPadding: const EdgeInsets.all(8),
-                ),
-                keyboardType: TextInputType.text,
-              ),
-              const SizedBox(height: 24),
-
-              // Password Input
-              TextField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  hintText: 'Password',
-                  border: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  filled: true,
-                  contentPadding: const EdgeInsets.all(8),
-                ),
-                obscureText: true,
-              ),
-              const SizedBox(height: 24),
-
-              // Sign Up Button
-              InkWell(
-                onTap: () {},
-                child: Container(
-                  width: double.infinity,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: const ShapeDecoration(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(4)),
-                    ),
-                    color: Colors.blue,
-                  ),
-                  child: const Text(
-                    'Sign up',
-                    style: TextStyle(color: Colors.white),
-                  ),
                 ),
               ),
-              const SizedBox(height: 12),
-              Flexible(child: Container(), flex: 2),
-
-              // Transition to Log In
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    child: const Text("Already have an account?"),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      context.go('/login');
-                    },
-                    child: Container(
-                      child: const Text(
-                        " Log in.",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

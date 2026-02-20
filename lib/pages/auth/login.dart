@@ -1,3 +1,5 @@
+import 'package:circlo_app/widgets/my_button.dart';
+import 'package:circlo_app/widgets/my_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -23,77 +25,52 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
+        child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
+          width: double.infinity,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Flexible(child: Container(), flex: 2),
-              // Instagram Text Logo
-              const Text(
+              // Circlo Text Logo
+              Text(
                 'Circlo',
-                style: TextStyle(
-                  fontFamily:
-                      'Poppins', // Make sure you have the font or use a generic one
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                  color: Theme.of(context).primaryColor,
                   fontSize: 64,
-                  fontWeight: FontWeight.w300,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 64),
 
               // Email Input
-              TextField(
+              MyTextField(
                 controller: _emailController,
-                decoration: InputDecoration(
-                  hintText: 'Phone number, email or username',
-                  border: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  filled: true,
-                  contentPadding: const EdgeInsets.all(8),
-                ),
+                hintText: 'Enter your email',
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
               // Password Input
-              TextField(
+              MyTextField(
                 controller: _passwordController,
-                decoration: InputDecoration(
-                  hintText: 'Password',
-                  border: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: Divider.createBorderSide(context),
-                  ),
-                  filled: true,
-                  contentPadding: const EdgeInsets.all(8),
-                ),
+                hintText: 'Enter your password',
                 obscureText: true,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
 
+              // Forgot Password
               Align(
                 alignment: Alignment.centerRight,
                 child: GestureDetector(
                   onTap: () {},
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: const Text(
+                    child: Text(
                       'Forgot password?',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -102,25 +79,9 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 24),
 
               // Login Button
-              InkWell(
-                onTap: () {},
-                child: Container(
-                  width: double.infinity,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: const ShapeDecoration(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(4)),
-                    ),
-                    color: Colors.blue,
-                  ),
-                  child: const Text(
-                    'Log in',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
+              MyButton(text: 'Log in', onTap: () {}),
+              const SizedBox(height: 24),
+
               Flexible(child: Container(), flex: 2),
 
               // Transition to Sign Up
@@ -128,7 +89,7 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    child: const Text("Don't have an account?"),
+                    child: Text("Don't have an account?"),
                     padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
                   GestureDetector(
@@ -136,9 +97,12 @@ class _LoginPageState extends State<LoginPage> {
                       context.go('/signup');
                     },
                     child: Container(
-                      child: const Text(
-                        " Sign up.",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      child: Text(
+                        " Register now",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                     ),

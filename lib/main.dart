@@ -1,3 +1,4 @@
+import 'package:circlo_app/config/theme.dart';
 import 'package:circlo_app/router/route.dart';
 import 'package:flutter/material.dart';
 
@@ -13,7 +14,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       routerConfig: routerConfig,
-      theme: ThemeData.dark(),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
     );
   }
 }
