@@ -40,7 +40,7 @@ class AuthRepository {
       );
     }
 
-    final response = await _dio.post("/api/auth/signup", data: formData);
+    final response = await _dio.post("/api/auth/register", data: formData);
     return AuthResponseModel.fromJson(response.data);
   }
 

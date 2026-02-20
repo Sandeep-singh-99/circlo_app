@@ -2,6 +2,7 @@ import 'package:circlo_app/core/storage/secure_storage.dart';
 import 'package:circlo_app/features/auth/bloc/auth_event.dart';
 import 'package:circlo_app/features/auth/bloc/auth_state.dart';
 import 'package:circlo_app/features/auth/repository/auth_repository.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
@@ -48,8 +49,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _storage.saveToken(response.token);
 
       emit(AuthAuthenticated(response.user));
-    } catch (_) {
-      emit(AuthFailure("Login failed"));
+    } on DioException catch (e) {
+      final message = e.response?.data['message'] ?? "Login failed";
+      emit(AuthFailure(message));
+    } catch (e) {
+      emit(AuthFailure("An unexpected error occurred"));
     }
   }
 
@@ -70,8 +74,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _storage.saveToken(response.token);
 
       emit(AuthAuthenticated(response.user));
-    } catch (_) {
-      emit(AuthFailure("Signup failed"));
+    } on DioException catch (e) {
+      final message = e.response?.data['message'] ?? "Signup failed";
+      emit(AuthFailure(message));
+    } catch (e) {
+      emit(AuthFailure("An unexpected error occurred"));
     }
   }
 

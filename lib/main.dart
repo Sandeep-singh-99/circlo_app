@@ -1,6 +1,7 @@
 import 'package:circlo_app/core/storage/secure_storage.dart';
 import 'package:circlo_app/features/auth/bloc/auth_bloc.dart';
 import 'package:circlo_app/features/auth/bloc/auth_event.dart';
+import 'package:circlo_app/features/auth/bloc/auth_state.dart';
 import 'package:circlo_app/features/auth/repository/auth_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -33,7 +34,27 @@ class MyApp extends StatelessWidget {
       routerConfig: createRouter(context.read<AuthBloc>()),
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
+      builder: (context, child) {
+        return BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if (state is AuthFailure) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  margin: const EdgeInsets.all(16),
+                ),
+              );
+            }
+          },
+          child: child!,
+        );
+      },
     );
   }
 }
