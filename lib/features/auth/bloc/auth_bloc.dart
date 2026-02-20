@@ -21,6 +21,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthCheckRequested event,
     Emitter<AuthState> emit,
   ) async {
+    emit(AuthLoading());
+
     final token = await _storage.getToken();
 
     if (token == null) {
@@ -33,7 +35,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthAuthenticated(user));
     } catch (_) {
       await _storage.deleteToken();
-      emit(AuthFailure("Session expired, please login again"));
+      emit(AuthUnauthenticated()); // ✅ not failure
     }
   }
 

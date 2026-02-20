@@ -46,6 +46,6 @@ class AuthRepository {
 
   Future<AuthModel> getMe() async {
     final response = await _dio.get("/api/auth/profile");
-    return AuthModel.fromJson(response.data);
+    return AuthModel.fromJson(response.data['user']);
   }
 }

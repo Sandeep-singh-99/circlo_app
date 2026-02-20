@@ -13,39 +13,52 @@ const String login = '/login';
 const String signup = '/signup';
 const String home = '/';
 const String forgetPassword = '/forget-password';
+const String splash = '/splash';
 
 GoRouter createRouter(AuthBloc authBloc) {
   return GoRouter(
-    initialLocation: login,
+    initialLocation: splash,
+
     refreshListenable: GoRouterRefreshStream(authBloc.stream),
+
     redirect: (context, state) {
       final authState = authBloc.state;
-      final isAuthenticated = authState is AuthAuthenticated;
-      // Also consider AuthUnauthenticated as strictly not authenticated
-      // And AuthInitial/AuthLoading as "wait"
 
-      final isLoggingIn = state.uri.toString() == login;
-      final isSigningUp = state.uri.toString() == signup;
-      final isForgetPassword = state.uri.toString() == forgetPassword;
+      final isOnLogin = state.matchedLocation == login;
+      final isOnSignup = state.matchedLocation == signup;
+      final isOnForget = state.matchedLocation == forgetPassword;
+      final isOnSplash = state.matchedLocation == splash;
 
-      if (!isAuthenticated) {
-        // If not authenticated, we can be on login, signup or forgetPassword
-        // If we are on home, redirect to login
-        if (!isLoggingIn && !isSigningUp && !isForgetPassword) {
-          return login;
-        }
+      // 1️⃣ While checking token → stay on splash
+      if (authState is AuthStateInitial || authState is AuthLoading) {
+        return isOnSplash ? null : splash;
       }
 
-      if (isAuthenticated) {
-        // If authenticated, we should not be on login/signup/forgetPassword
-        if (isLoggingIn || isSigningUp || isForgetPassword) {
+      // 2️⃣ Not authenticated
+      if (authState is AuthUnauthenticated) {
+        if (isOnLogin || isOnSignup || isOnForget) {
+          return null;
+        }
+        return login;
+      }
+
+      // 3️⃣ Authenticated
+      if (authState is AuthAuthenticated) {
+        if (isOnLogin || isOnSignup || isOnForget || isOnSplash) {
           return home;
         }
       }
 
       return null;
     },
+
     routes: [
+      GoRoute(
+        path: splash,
+        builder: (context, state) => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      ),
       GoRoute(path: login, builder: (context, state) => const LoginPage()),
       GoRoute(path: signup, builder: (context, state) => const SignupPage()),
       GoRoute(
