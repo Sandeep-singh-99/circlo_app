@@ -1,5 +1,11 @@
 import 'package:circlo_app/features/auth/bloc/auth_bloc.dart';
 import 'package:circlo_app/features/auth/bloc/auth_state.dart';
+import 'package:circlo_app/pages/home_tabs/activity_page.dart';
+import 'package:circlo_app/pages/home_tabs/add_post_page.dart';
+import 'package:circlo_app/pages/home_tabs/feed_page.dart';
+import 'package:circlo_app/pages/home_tabs/profile_page.dart';
+import 'package:circlo_app/pages/home_tabs/search_page.dart';
+import 'package:circlo_app/widgets/my_bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -11,26 +17,37 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _pages = [
+    const FeedPage(),
+    const SearchPage(),
+    const AddPostPage(),
+    const ActivityPage(),
+    const ProfilePage(),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
+        String? profileImageUrl;
+        if (state is AuthAuthenticated) {
+          profileImageUrl = state.user.imageUrl;
+        }
+
         return Scaffold(
-          appBar: AppBar(
-            title: const Text("Home"),
-            actions: [
-              if (state is AuthAuthenticated)
-                Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
-                  child: CircleAvatar(
-                    backgroundImage: state.user.imageUrl != null
-                        ? NetworkImage(state.user.imageUrl!)
-                        : const NetworkImage(
-                            'https://i.stack.imgur.com/l60Hf.png',
-                          ),
-                  ),
-                ),
-            ],
+          body: IndexedStack(index: _selectedIndex, children: _pages),
+          bottomNavigationBar: MyBottomNavBar(
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            profileImageUrl: profileImageUrl,
           ),
         );
       },
