@@ -3,6 +3,9 @@ import 'package:circlo_app/features/auth/bloc/auth_bloc.dart';
 import 'package:circlo_app/features/auth/bloc/auth_event.dart';
 import 'package:circlo_app/features/auth/bloc/auth_state.dart';
 import 'package:circlo_app/features/auth/repository/auth_repository.dart';
+import 'package:circlo_app/features/post/bloc/post_bloc.dart';
+import 'package:circlo_app/features/post/bloc/post_event.dart';
+import 'package:circlo_app/features/post/repository/post_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:circlo_app/config/theme.dart';
@@ -18,6 +21,7 @@ void main() {
               AuthBloc(AuthRepository(), SecureStorageService())
                 ..add(AuthCheckRequested()),
         ),
+        BlocProvider(create: (context) => PostBloc(PostRepository())..add(PostGetAllRequested()))
       ],
       child: const MyApp(),
     ),
