@@ -1,4 +1,7 @@
+import 'package:circlo_app/router/route.dart' as app_routes;
+import 'package:circlo_app/widgets/create_post_option.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class CreatePostSheet extends StatelessWidget {
   const CreatePostSheet({super.key});
@@ -27,6 +30,8 @@ class CreatePostSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
+
+          // Title row
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
@@ -48,8 +53,10 @@ class CreatePostSheet extends StatelessWidget {
               ],
             ),
           ),
+
           const Divider(height: 1),
           const SizedBox(height: 8),
+
           CreatePostOption(
             icon: Icons.image_outlined,
             label: 'Image Upload',
@@ -57,9 +64,10 @@ class CreatePostSheet extends StatelessWidget {
             iconColor: primaryColor,
             onTap: () {
               Navigator.of(context).pop();
-              // TODO: navigate to image upload / create post screen
+              context.push(app_routes.createImagePost);
             },
           ),
+
           CreatePostOption(
             icon: Icons.videocam_outlined,
             label: 'Video Upload',
@@ -67,9 +75,10 @@ class CreatePostSheet extends StatelessWidget {
             iconColor: Colors.deepPurple,
             onTap: () {
               Navigator.of(context).pop();
-              // TODO: navigate to video upload / reel screen
+              // TODO: navigate to video upload screen
             },
           ),
+
           CreatePostOption(
             icon: Icons.stream,
             label: 'Live',
@@ -80,79 +89,9 @@ class CreatePostSheet extends StatelessWidget {
               // TODO: navigate to live stream screen
             },
           ),
+
           const SizedBox(height: 16),
         ],
-      ),
-    );
-  }
-}
-
-class CreatePostOption extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final Color iconColor;
-  final VoidCallback onTap;
-
-  const CreatePostOption({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.iconColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: iconColor.withAlpha(25),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(icon, color: iconColor, size: 28),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: colorScheme.onSurface.withAlpha(153),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: colorScheme.onSurface.withAlpha(102),
-            ),
-          ],
-        ),
       ),
     );
   }

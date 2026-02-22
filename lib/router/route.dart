@@ -5,6 +5,7 @@ import 'package:circlo_app/features/auth/bloc/auth_state.dart';
 import 'package:circlo_app/pages/auth/forget_password.dart';
 import 'package:circlo_app/pages/auth/login.dart';
 import 'package:circlo_app/pages/auth/signup.dart';
+import 'package:circlo_app/pages/create_post/create_image_post_page.dart';
 import 'package:circlo_app/pages/home.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +15,7 @@ const String signup = '/signup';
 const String home = '/';
 const String forgetPassword = '/forget-password';
 const String splash = '/splash';
+const String createImagePost = '/create-image-post';
 
 GoRouter createRouter(AuthBloc authBloc) {
   return GoRouter(
@@ -55,9 +57,8 @@ GoRouter createRouter(AuthBloc authBloc) {
     routes: [
       GoRoute(
         path: splash,
-        builder: (context, state) => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
+        builder: (context, state) =>
+            const Scaffold(body: Center(child: CircularProgressIndicator())),
       ),
       GoRoute(path: login, builder: (context, state) => const LoginPage()),
       GoRoute(path: signup, builder: (context, state) => const SignupPage()),
@@ -66,6 +67,10 @@ GoRouter createRouter(AuthBloc authBloc) {
         builder: (context, state) => const ForgetPassword(),
       ),
       GoRoute(path: home, builder: (context, state) => const HomePage()),
+      GoRoute(
+        path: createImagePost,
+        builder: (context, state) => const CreateImagePostPage(),
+      ),
     ],
   );
 }
