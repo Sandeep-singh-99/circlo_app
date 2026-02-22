@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
       routerConfig: createRouter(context.read<AuthBloc>()),
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.light,
+      themeMode: ThemeMode.dark,
       builder: (context, child) {
         return BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
