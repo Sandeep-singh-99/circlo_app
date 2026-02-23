@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:circlo_app/features/auth/bloc/auth_bloc.dart';
 import 'package:circlo_app/features/auth/bloc/auth_state.dart';
 import 'package:circlo_app/pages/auth/forget_password.dart';
+import 'package:circlo_app/pages/splash_screen.dart';
 import 'package:circlo_app/pages/auth/login.dart';
 import 'package:circlo_app/pages/auth/signup.dart';
 import 'package:circlo_app/pages/create_post/create_image_post_page.dart';
@@ -55,11 +56,7 @@ GoRouter createRouter(AuthBloc authBloc) {
     },
 
     routes: [
-      GoRoute(
-        path: splash,
-        builder: (context, state) =>
-            const Scaffold(body: Center(child: CircularProgressIndicator())),
-      ),
+      GoRoute(path: splash, builder: (context, state) => const SplashScreen()),
       GoRoute(path: login, builder: (context, state) => const LoginPage()),
       GoRoute(path: signup, builder: (context, state) => const SignupPage()),
       GoRoute(
