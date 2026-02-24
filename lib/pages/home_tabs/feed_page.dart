@@ -102,7 +102,6 @@ class _FeedPageState extends State<FeedPage>
 
             if (state is PostSuccess) {
               final posts = state.postResponseModel.posts;
-              final user = state.postResponseModel.user;
 
               if (posts.isEmpty) {
                 return _buildEmptyState(isDark);
@@ -114,7 +113,6 @@ class _FeedPageState extends State<FeedPage>
                     ? const Color(0xFF1C1C1E)
                     : Colors.white,
                 onRefresh: () async {
-                  // Trigger refresh; optionally add PostGetAllRequested event
                   await Future.delayed(const Duration(milliseconds: 500));
                 },
                 child: ListView.builder(
@@ -122,7 +120,7 @@ class _FeedPageState extends State<FeedPage>
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: posts.length,
                   itemBuilder: (context, index) {
-                    return FeedPostCard(post: posts[index], user: user);
+                    return FeedPostCard(post: posts[index]);
                   },
                 ),
               );

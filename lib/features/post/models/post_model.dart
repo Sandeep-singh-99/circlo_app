@@ -1,3 +1,5 @@
+import 'package:circlo_app/features/auth/models/auth_model.dart';
+
 final class PostModel {
   final String? id;
   final String content;
@@ -8,7 +10,8 @@ final class PostModel {
   final String? createdAt;
   final String? updatedAt;
   final String? userId;
-
+  // Embedded author — present in getAllPosts / getById (include: { user: true })
+  final AuthModel? user;
 
   PostModel({
     this.id,
@@ -20,19 +23,23 @@ final class PostModel {
     this.createdAt,
     this.updatedAt,
     this.userId,
+    this.user,
   });
 
   factory PostModel.fromJson(Map<String, dynamic> json) {
     return PostModel(
-      id: json['id'],
-      content: json['content'],
-      imageUrl: json['imageUrl'],
-      imageUrlID: json['imageUrlID'],
-      videoUrl: json['videoUrl'],
-      videoUrlID: json['videoUrlID'],
-      createdAt: json['createdAt'],
-      updatedAt: json['updatedAt'],
-      userId: json['userId'],
+      id: json['id'] as String?,
+      content: json['content'] as String? ?? '',
+      imageUrl: json['imageUrl'] as String?,
+      imageUrlID: json['imageUrlID'] as String?,
+      videoUrl: json['videoUrl'] as String?,
+      videoUrlID: json['videoUrlID'] as String?,
+      createdAt: json['createdAt'] as String?,
+      updatedAt: json['updatedAt'] as String?,
+      userId: json['userId'] as String?,
+      user: json['user'] != null
+          ? AuthModel.fromJson(json['user'] as Map<String, dynamic>)
+          : null,
     );
   }
 }

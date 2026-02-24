@@ -1,14 +1,12 @@
 import 'package:circlo_app/features/post/models/post_model.dart';
-import 'package:circlo_app/features/auth/models/auth_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class FeedPostCard extends StatefulWidget {
   final PostModel post;
-  final AuthModel user;
 
-  const FeedPostCard({super.key, required this.post, required this.user});
+  const FeedPostCard({super.key, required this.post});
 
   @override
   State<FeedPostCard> createState() => _FeedPostCardState();
@@ -191,8 +189,9 @@ class _FeedPostCardState extends State<FeedPostCard>
   }
 
   Widget _buildHeader(Color textPrimary, Color textSecondary) {
-    final hasAvatar =
-        widget.user.imageUrl != null && widget.user.imageUrl!.isNotEmpty;
+    final author = widget.post.user;
+    final authorImageUrl = author?.imageUrl;
+    final hasAvatar = authorImageUrl != null && authorImageUrl.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -219,12 +218,12 @@ class _FeedPostCardState extends State<FeedPostCard>
                 radius: 16,
                 backgroundColor: const Color(0xFF2A2A2A),
                 backgroundImage: hasAvatar
-                    ? NetworkImage(widget.user.imageUrl!)
+                    ? NetworkImage(authorImageUrl)
                     : null,
                 child: !hasAvatar
                     ? Text(
-                        widget.user.name.isNotEmpty
-                            ? widget.user.name[0].toUpperCase()
+                        (author?.name.isNotEmpty ?? false)
+                            ? author!.name[0].toUpperCase()
                             : '?',
                         style: GoogleFonts.poppins(
                           fontSize: 13,
@@ -244,7 +243,7 @@ class _FeedPostCardState extends State<FeedPostCard>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.user.name,
+                  author?.name ?? 'Unknown',
                   style: GoogleFonts.poppins(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w600,
@@ -405,7 +404,7 @@ class _FeedPostCardState extends State<FeedPostCard>
           children: [
             // username bold
             TextSpan(
-              text: '${widget.user.name} ',
+              text: '${widget.post.user?.name ?? ''} ',
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,

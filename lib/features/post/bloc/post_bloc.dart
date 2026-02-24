@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class PostBloc extends Bloc<PostEvent, PostState> {
   final PostRepository _postRepository;
 
-  PostBloc(this._postRepository): super(PostStateInitial()) {
+  PostBloc(this._postRepository) : super(PostStateInitial()) {
     on<PostCreateRequested>(_onPostCreateRequested);
     on<PostGetAllRequested>(_onPostGetAllRequested);
     on<PostDeleteRequested>(_onPostDeleteRequested);
@@ -19,8 +19,10 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   ) async {
     emit(PostLoading());
     try {
-      final response = await _postRepository.createPost(event.content, event.image);
-      emit(PostSuccess(response));
+      await _postRepository.createPost(event.content, event.image);
+      // Refresh the feed after successful creation
+      final allPosts = await _postRepository.getPost();
+      emit(PostSuccess(allPosts));
     } catch (e) {
       emit(PostFailure(e.toString()));
     }
