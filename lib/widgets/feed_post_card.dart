@@ -1,9 +1,11 @@
 import 'package:circlo_app/features/auth/bloc/auth_bloc.dart';
 import 'package:circlo_app/features/auth/bloc/auth_state.dart';
 import 'package:circlo_app/features/post/models/post_model.dart';
+import 'package:circlo_app/router/route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class FeedPostCard extends StatefulWidget {
@@ -73,6 +75,13 @@ class _FeedPostCardState extends State<FeedPostCard>
     super.dispose();
   }
 
+  void _navigateToDetail() {
+    final id = widget.post.id;
+    if (id != null && id.isNotEmpty) {
+      context.push('$postDetail/$id');
+    }
+  }
+
   void _toggleLike() {
     HapticFeedback.lightImpact();
     setState(() {
@@ -124,71 +133,77 @@ class _FeedPostCardState extends State<FeedPostCard>
     final divider = isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0);
     final commentCount = (_likeCount * 0.3).round();
 
-    return Container(
-      color: bg,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Header ──────────────────────────────────────────────
-          _buildHeader(textPrimary, textSecondary, isDark),
+    return GestureDetector(
+      onTap: _navigateToDetail,
+      child: Container(
+        color: bg,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header ──────────────────────────────────────────────
+            _buildHeader(textPrimary, textSecondary, isDark),
 
-          // ── Image ───────────────────────────────────────────────
-          if (widget.post.imageUrl != null) _buildImage(isDark),
+            // ── Image ───────────────────────────────────────────────
+            if (widget.post.imageUrl != null) _buildImage(isDark),
 
-          // ── Actions ─────────────────────────────────────────────
-          _buildActions(textPrimary),
+            // ── Actions ─────────────────────────────────────────────
+            _buildActions(textPrimary),
 
-          // ── Like count ──────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Text(
-              '${_formatCount(_likeCount)} likes',
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: textPrimary,
+            // ── Like count ──────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Text(
+                '${_formatCount(_likeCount)} likes',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: textPrimary,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 4),
+            const SizedBox(height: 4),
 
-          // ── Caption ─────────────────────────────────────────────
-          if (widget.post.content.isNotEmpty)
-            _buildCaption(textPrimary, textSecondary),
+            // ── Caption ─────────────────────────────────────────────
+            if (widget.post.content.isNotEmpty)
+              _buildCaption(textPrimary, textSecondary),
 
-          // ── Comment hint ────────────────────────────────────────
-          if (commentCount > 0)
+            // ── Comment hint ────────────────────────────────────────
+            if (commentCount > 0)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 2,
+                ),
+                child: Text(
+                  'View all $commentCount comments',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.5,
+                    color: textSecondary,
+                  ),
+                ),
+              ),
+
+            // ── Time ────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+              padding: const EdgeInsets.only(
+                left: 14,
+                right: 14,
+                top: 4,
+                bottom: 10,
+              ),
               child: Text(
-                'View all $commentCount comments',
+                _timeAgo(widget.post.createdAt).toUpperCase(),
                 style: GoogleFonts.poppins(
-                  fontSize: 12.5,
-                  color: textSecondary,
+                  fontSize: 10,
+                  letterSpacing: 0.5,
+                  color: textSecondary.withOpacity(0.55),
                 ),
               ),
             ),
 
-          // ── Time ────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.only(
-              left: 14,
-              right: 14,
-              top: 4,
-              bottom: 10,
-            ),
-            child: Text(
-              _timeAgo(widget.post.createdAt).toUpperCase(),
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                letterSpacing: 0.5,
-                color: textSecondary.withOpacity(0.55),
-              ),
-            ),
-          ),
-
-          Divider(height: 1, thickness: 0.5, color: divider),
-        ],
+            Divider(height: 1, thickness: 0.5, color: divider),
+          ],
+        ),
       ),
     );
   }

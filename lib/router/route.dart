@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:circlo_app/features/auth/bloc/auth_bloc.dart';
 import 'package:circlo_app/features/auth/bloc/auth_state.dart';
 import 'package:circlo_app/pages/auth/forget_password.dart';
+import 'package:circlo_app/pages/post_detail_page.dart';
 import 'package:circlo_app/pages/splash_screen.dart';
 import 'package:circlo_app/pages/auth/login.dart';
 import 'package:circlo_app/pages/auth/signup.dart';
@@ -17,6 +18,7 @@ const String home = '/';
 const String forgetPassword = '/forget-password';
 const String splash = '/splash';
 const String createImagePost = '/create-image-post';
+const String postDetail = '/post';
 
 GoRouter createRouter(AuthBloc authBloc) {
   return GoRouter(
@@ -67,6 +69,11 @@ GoRouter createRouter(AuthBloc authBloc) {
       GoRoute(
         path: createImagePost,
         builder: (context, state) => const CreateImagePostPage(),
+      ),
+      GoRoute(
+        path: '$postDetail/:id',
+        builder: (context, state) =>
+            PostDetailPage(postId: state.pathParameters['id']!),
       ),
     ],
   );

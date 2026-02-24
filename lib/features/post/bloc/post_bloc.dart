@@ -60,12 +60,17 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     PostGetByIdRequested event,
     Emitter<PostState> emit,
   ) async {
-    emit(PostLoading());
+    emit(PostDetailLoading());
     try {
       final response = await _postRepository.getPostById(event.id);
-      emit(PostSuccess(response));
+      final post = response.post;
+      if (post == null) {
+        emit(PostDetailFailure('Post not found'));
+      } else {
+        emit(PostDetailSuccess(post));
+      }
     } catch (e) {
-      emit(PostFailure(e.toString()));
+      emit(PostDetailFailure(e.toString()));
     }
   }
 }

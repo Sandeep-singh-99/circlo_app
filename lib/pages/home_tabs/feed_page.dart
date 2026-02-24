@@ -96,6 +96,13 @@ class _FeedPageState extends State<FeedPage>
           ),
         ],
         body: BlocBuilder<PostBloc, PostState>(
+          // Ignore PostDetail* states so the feed doesn't reset when
+          // the user opens/closes the post detail page
+          buildWhen: (prev, curr) =>
+              curr is PostStateInitial ||
+              curr is PostLoading ||
+              curr is PostSuccess ||
+              curr is PostFailure,
           builder: (context, state) {
             if (state is PostLoading || state is PostStateInitial) {
               return _buildSkeletonLoader(isDark);
