@@ -1,13 +1,10 @@
 import 'package:circlo_app/features/post/bloc/post_bloc.dart';
 import 'package:circlo_app/features/post/bloc/post_event.dart';
 import 'package:circlo_app/features/post/bloc/post_state.dart';
-import 'package:circlo_app/router/route.dart';
 import 'package:circlo_app/widgets/feed_post_card.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class FeedPage extends StatefulWidget {
@@ -78,16 +75,6 @@ class _FeedPageState extends State<FeedPage>
                 : SystemUiOverlayStyle.dark,
             title: _buildLogoTitle(),
             actions: [
-              // 🛠 DEBUG BUTTON — remove before production
-              if (kDebugMode)
-                IconButton(
-                  icon: const Icon(
-                    Icons.bug_report_rounded,
-                    color: Colors.orange,
-                  ),
-                  tooltip: 'Debug token & API',
-                  onPressed: () => context.push(debugPage),
-                ),
               _buildActionIcon(
                 icon: Icons.favorite_border_rounded,
                 badge: _hasNotification,
