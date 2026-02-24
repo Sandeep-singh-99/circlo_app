@@ -1,9 +1,13 @@
 import 'package:circlo_app/features/post/bloc/post_bloc.dart';
+import 'package:circlo_app/features/post/bloc/post_event.dart';
 import 'package:circlo_app/features/post/bloc/post_state.dart';
+import 'package:circlo_app/router/route.dart';
 import 'package:circlo_app/widgets/feed_post_card.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class FeedPage extends StatefulWidget {
@@ -29,6 +33,10 @@ class _FeedPageState extends State<FeedPage>
     _iconScaleAnim = Tween<double>(begin: 1.0, end: 0.82).animate(
       CurvedAnimation(parent: _iconAnimController, curve: Curves.easeInOut),
     );
+    // Fetch posts when the feed page is first shown
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<PostBloc>().add(PostGetAllRequested());
+    });
   }
 
   @override
@@ -70,6 +78,16 @@ class _FeedPageState extends State<FeedPage>
                 : SystemUiOverlayStyle.dark,
             title: _buildLogoTitle(),
             actions: [
+              // 🛠 DEBUG BUTTON — remove before production
+              if (kDebugMode)
+                IconButton(
+                  icon: const Icon(
+                    Icons.bug_report_rounded,
+                    color: Colors.orange,
+                  ),
+                  tooltip: 'Debug token & API',
+                  onPressed: () => context.push(debugPage),
+                ),
               _buildActionIcon(
                 icon: Icons.favorite_border_rounded,
                 badge: _hasNotification,
@@ -113,7 +131,9 @@ class _FeedPageState extends State<FeedPage>
                     ? const Color(0xFF1C1C1E)
                     : Colors.white,
                 onRefresh: () async {
-                  await Future.delayed(const Duration(milliseconds: 500));
+                  context.read<PostBloc>().add(PostGetAllRequested());
+                  // Wait briefly for the bloc to emit before returning
+                  await Future.delayed(const Duration(milliseconds: 600));
                 },
                 child: ListView.builder(
                   padding: EdgeInsets.zero,
@@ -285,7 +305,9 @@ class _FeedPageState extends State<FeedPage>
             ),
             const SizedBox(height: 20),
             TextButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                context.read<PostBloc>().add(PostGetAllRequested());
+              },
               icon: const Icon(Icons.refresh_rounded, color: Color(0xFF6C63FF)),
               label: Text(
                 'Retry',

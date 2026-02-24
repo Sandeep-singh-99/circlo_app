@@ -1,6 +1,7 @@
 import 'package:circlo_app/features/post/bloc/post_event.dart';
 import 'package:circlo_app/features/post/bloc/post_state.dart';
 import 'package:circlo_app/features/post/repository/post_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class PostBloc extends Bloc<PostEvent, PostState> {
@@ -36,7 +37,8 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     try {
       final response = await _postRepository.getPost();
       emit(PostSuccess(response));
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('PostGetAllRequested error: $e\n$st');
       emit(PostFailure(e.toString()));
     }
   }

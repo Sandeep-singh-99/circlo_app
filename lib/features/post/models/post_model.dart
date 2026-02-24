@@ -1,4 +1,5 @@
 import 'package:circlo_app/features/auth/models/auth_model.dart';
+import 'package:circlo_app/features/post/models/post_hashtag_model.dart';
 
 final class PostModel {
   final String? id;
@@ -10,8 +11,8 @@ final class PostModel {
   final String? createdAt;
   final String? updatedAt;
   final String? userId;
-  // Embedded author — present in getAllPosts / getById (include: { user: true })
   final AuthModel? user;
+  final List<PostHashtag> hashtags;
 
   PostModel({
     this.id,
@@ -24,12 +25,13 @@ final class PostModel {
     this.updatedAt,
     this.userId,
     this.user,
+    this.hashtags = const [],
   });
 
   factory PostModel.fromJson(Map<String, dynamic> json) {
     return PostModel(
       id: json['id'] as String?,
-      content: json['content'] as String? ?? '',
+      content: (json['content'] as String?) ?? '',
       imageUrl: json['imageUrl'] as String?,
       imageUrlID: json['imageUrlID'] as String?,
       videoUrl: json['videoUrl'] as String?,
@@ -40,6 +42,11 @@ final class PostModel {
       user: json['user'] != null
           ? AuthModel.fromJson(json['user'] as Map<String, dynamic>)
           : null,
+      hashtags: json['hashtags'] != null
+          ? (json['hashtags'] as List<dynamic>)
+                .map((e) => PostHashtag.fromJson(e as Map<String, dynamic>))
+                .toList()
+          : [],
     );
   }
 }

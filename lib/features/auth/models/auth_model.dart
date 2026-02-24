@@ -11,7 +11,6 @@ final class AuthModel {
   final String? createdAt;
   final String? updatedAt;
 
-
   AuthModel({
     this.token,
     this.id,
@@ -26,15 +25,15 @@ final class AuthModel {
 
   factory AuthModel.fromJson(Map<String, dynamic> json) {
     return AuthModel(
-      token: json['token'],
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      imageUrl: json['imageUrl'],
-      imageUrlID: json['imageUrlID'],
-      image: json['image'],
-      createdAt: json['createdAt'],
-      updatedAt: json['updatedAt'],
+      token: json['token'] as String?,
+      id: json['id'] as String?,
+      name: (json['name'] as String?) ?? '',
+      email: (json['email'] as String?) ?? '',
+      imageUrl: json['imageUrl'] as String?,
+      imageUrlID: json['imageUrlID'] as String?,
+      // 'image' is a local File for uploads only — never comes from JSON
+      createdAt: json['createdAt'] as String?,
+      updatedAt: json['updatedAt'] as String?,
     );
   }
 }
