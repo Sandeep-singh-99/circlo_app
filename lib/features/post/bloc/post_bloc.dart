@@ -12,6 +12,7 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     on<PostGetAllRequested>(_onPostGetAllRequested);
     on<PostDeleteRequested>(_onPostDeleteRequested);
     on<PostGetByIdRequested>(_onPostGetByIdRequested);
+    on<PostGetOwnRequested>(_onPostGetOwnRequested);
   }
 
   Future<void> _onPostCreateRequested(
@@ -71,6 +72,19 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       }
     } catch (e) {
       emit(PostDetailFailure(e.toString()));
+    }
+  }
+
+  Future<void> _onPostGetOwnRequested(
+    PostGetOwnRequested event,
+    Emitter<PostState> emit,
+  ) async {
+    emit(PostLoading());
+    try {
+      final response = await _postRepository.getOwnPosts();
+      emit(PostSuccess(response));
+    } catch (e) {
+      emit(PostFailure(e.toString()));
     }
   }
 }

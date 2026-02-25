@@ -22,3 +22,5 @@ class PostGetByIdRequested extends PostEvent {
 
   PostGetByIdRequested({required this.id});
 }
+
+class PostGetOwnRequested extends PostEvent {}

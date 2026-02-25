@@ -2,6 +2,9 @@ import 'package:circlo_app/features/auth/bloc/auth_bloc.dart';
 import 'package:circlo_app/features/auth/bloc/auth_event.dart';
 import 'package:circlo_app/features/auth/bloc/auth_state.dart';
 import 'package:circlo_app/features/auth/models/auth_model.dart';
+import 'package:circlo_app/features/post/bloc/post_bloc.dart';
+import 'package:circlo_app/features/post/bloc/post_event.dart';
+import 'package:circlo_app/features/post/bloc/post_state.dart';
 import 'package:circlo_app/features/post/models/post_model.dart';
 import 'package:circlo_app/widgets/gradient_avatar_ring.dart';
 import 'package:circlo_app/widgets/profile_grid_post_card.dart';
@@ -85,132 +88,22 @@ class _ProfilePageState extends State<ProfilePage>
 // ─────────────────────────────────────────────────────────────
 //  MAIN CONTENT  (authenticated)
 // ─────────────────────────────────────────────────────────────
-class _ProfileContent extends StatelessWidget {
+class _ProfileContent extends StatefulWidget {
   final AuthModel user;
   final TabController tab;
 
   const _ProfileContent({required this.user, required this.tab});
 
   @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? Colors.black : Colors.white;
-    final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textSecondary = isDark ? Colors.grey[400]! : Colors.grey[600]!;
+  State<_ProfileContent> createState() => _ProfileContentState();
+}
 
-    // Derive realistic-looking stats from the user id hash
-    final seed = user.id?.hashCode.abs() ?? 42;
-    final postsCount = (seed % 120) + 5;
-    final followersCount = (seed % 9800) + 200;
-    final followingCount = (seed % 600) + 50;
-
-    // Build mock posts grid data
-    final mockPosts = _buildMockPosts(user, postsCount);
-
-    return Scaffold(
-      backgroundColor: bg,
-      body: NestedScrollView(
-        headerSliverBuilder: (ctx, _) => [
-          // ── AppBar ──────────────────────────────────────────
-          SliverAppBar(
-            backgroundColor: bg,
-            elevation: 0,
-            pinned: true,
-            title: Text(
-              user.name,
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-                color: textPrimary,
-              ),
-            ),
-            actions: [
-              IconButton(
-                icon: Icon(Icons.add_box_outlined, color: textPrimary),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: Icon(Icons.menu_rounded, color: textPrimary),
-                onPressed: () => _showSettingsSheet(context, isDark),
-              ),
-            ],
-          ),
-
-          // ── Profile header ──────────────────────────────────
-          SliverToBoxAdapter(
-            child: _ProfileHeader(
-              user: user,
-              postsCount: postsCount,
-              followersCount: followersCount,
-              followingCount: followingCount,
-              isDark: isDark,
-            ),
-          ),
-
-          // ── Story Highlights row ────────────────────────────
-          SliverToBoxAdapter(
-            child: _HighlightsRow(user: user, textSecondary: textSecondary),
-          ),
-
-          // ── Sticky Tab bar ──────────────────────────────────
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _TabBarDelegate(
-              TabBar(
-                controller: tab,
-                indicatorColor: textPrimary,
-                indicatorWeight: 1.5,
-                labelColor: textPrimary,
-                unselectedLabelColor: textSecondary,
-                tabs: const [
-                  Tab(icon: Icon(Icons.grid_on_rounded, size: 24)),
-                  Tab(icon: Icon(Icons.slow_motion_video_rounded, size: 24)),
-                  Tab(icon: Icon(Icons.person_pin_circle_outlined, size: 24)),
-                ],
-              ),
-              color: bg,
-            ),
-          ),
-        ],
-        body: TabBarView(
-          controller: tab,
-          children: [
-            // ── Posts grid (uses ProfileGridPostCard widget) ──
-            _PostsGrid(posts: mockPosts),
-
-            // ── Reels placeholder ─────────────────────────────
-            _EmptyTabContent(
-              icon: Icons.slow_motion_video_rounded,
-              label: 'No Reels yet',
-              textSecondary: textSecondary,
-            ),
-
-            // ── Tagged placeholder ────────────────────────────
-            _EmptyTabContent(
-              icon: Icons.person_pin_circle_outlined,
-              label: 'No tagged posts',
-              textSecondary: textSecondary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<PostModel> _buildMockPosts(AuthModel user, int count) {
-    final limited = count.clamp(0, 18);
-    return List.generate(limited, (i) {
-      final s = (user.id?.hashCode.abs() ?? 0) + i;
-      return PostModel(
-        id: 'mock_$i',
-        content: 'Post number $i – tap to see more ✨',
-        imageUrl: 'https://picsum.photos/seed/$s/400/400',
-        createdAt: DateTime.now()
-            .subtract(Duration(days: i * 3))
-            .toIso8601String(),
-        userId: user.id,
-      );
-    });
+class _ProfileContentState extends State<_ProfileContent> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch the current user's own posts when the profile page loads
+    context.read<PostBloc>().add(PostGetOwnRequested());
   }
 
   void _showSettingsSheet(BuildContext context, bool isDark) {
@@ -221,6 +114,131 @@ class _ProfileContent extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => _SettingsSheet(isDark: isDark),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? Colors.black : Colors.white;
+    final textPrimary = isDark ? Colors.white : Colors.black87;
+    final textSecondary = isDark ? Colors.grey[400]! : Colors.grey[600]!;
+
+    // Derive follower/following stats from user id hash (kept as before)
+    final seed = widget.user.id?.hashCode.abs() ?? 42;
+    final followersCount = (seed % 9800) + 200;
+    final followingCount = (seed % 600) + 50;
+
+    return BlocBuilder<PostBloc, PostState>(
+      builder: (context, postState) {
+        final posts = postState is PostSuccess
+            ? postState.postResponseModel.posts
+            : <PostModel>[];
+        final postsCount = posts.length;
+
+        return Scaffold(
+          backgroundColor: bg,
+          body: NestedScrollView(
+            headerSliverBuilder: (ctx, _) => [
+              // ── AppBar ──────────────────────────────────────────
+              SliverAppBar(
+                backgroundColor: bg,
+                elevation: 0,
+                pinned: true,
+                title: Text(
+                  widget.user.name,
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    color: textPrimary,
+                  ),
+                ),
+                actions: [
+                  IconButton(
+                    icon: Icon(Icons.add_box_outlined, color: textPrimary),
+                    onPressed: () {},
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.menu_rounded, color: textPrimary),
+                    onPressed: () => _showSettingsSheet(context, isDark),
+                  ),
+                ],
+              ),
+
+              // ── Profile header ──────────────────────────────────
+              SliverToBoxAdapter(
+                child: _ProfileHeader(
+                  user: widget.user,
+                  postsCount: postsCount,
+                  followersCount: followersCount,
+                  followingCount: followingCount,
+                  isDark: isDark,
+                ),
+              ),
+
+              // ── Story Highlights row ────────────────────────────
+              SliverToBoxAdapter(
+                child: _HighlightsRow(
+                  user: widget.user,
+                  textSecondary: textSecondary,
+                ),
+              ),
+
+              // ── Sticky Tab bar ──────────────────────────────────
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _TabBarDelegate(
+                  TabBar(
+                    controller: widget.tab,
+                    indicatorColor: textPrimary,
+                    indicatorWeight: 1.5,
+                    labelColor: textPrimary,
+                    unselectedLabelColor: textSecondary,
+                    tabs: const [
+                      Tab(icon: Icon(Icons.grid_on_rounded, size: 24)),
+                      Tab(
+                        icon: Icon(Icons.slow_motion_video_rounded, size: 24),
+                      ),
+                      Tab(
+                        icon: Icon(Icons.person_pin_circle_outlined, size: 24),
+                      ),
+                    ],
+                  ),
+                  color: bg,
+                ),
+              ),
+            ],
+            body: TabBarView(
+              controller: widget.tab,
+              children: [
+                // ── Posts grid ────────────────────────────────────
+                _PostsGrid(
+                  posts: posts,
+                  isLoading: postState is PostLoading,
+                  errorMessage: postState is PostFailure
+                      ? postState.message
+                      : null,
+                  textSecondary: textSecondary,
+                ),
+
+                // ── Reels placeholder ─────────────────────────────
+                _EmptyTabContent(
+                  icon: Icons.slow_motion_video_rounded,
+                  label: 'No Reels yet',
+                  textSecondary: textSecondary,
+                ),
+
+                // ── Tagged placeholder ────────────────────────────
+                _EmptyTabContent(
+                  icon: Icons.person_pin_circle_outlined,
+                  label: 'No tagged posts',
+                  textSecondary: textSecondary,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -573,11 +591,50 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
 // ─────────────────────────────────────────────────────────────
 class _PostsGrid extends StatelessWidget {
   final List<PostModel> posts;
+  final bool isLoading;
+  final String? errorMessage;
+  final Color textSecondary;
 
-  const _PostsGrid({required this.posts});
+  const _PostsGrid({
+    required this.posts,
+    required this.isLoading,
+    required this.textSecondary,
+    this.errorMessage,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return GridView.builder(
+        padding: EdgeInsets.zero,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 1.5,
+          mainAxisSpacing: 1.5,
+        ),
+        itemCount: 9,
+        itemBuilder: (ctx, i) =>
+            Container(color: Colors.grey.withValues(alpha: 0.15)),
+      );
+    }
+
+    if (errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+            const SizedBox(height: 8),
+            Text(
+              errorMessage!,
+              style: GoogleFonts.poppins(color: textSecondary, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
     if (posts.isEmpty) {
       return Center(
         child: Text(
@@ -586,6 +643,7 @@ class _PostsGrid extends StatelessWidget {
         ),
       );
     }
+
     return GridView.builder(
       padding: EdgeInsets.zero,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

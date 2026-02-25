@@ -69,4 +69,13 @@ class PostRepository {
       throw _handleDioError(e);
     }
   }
+
+  Future<PostResponseModel> getOwnPosts() async {
+    try {
+      final response = await _dio.get("/api/post/get-own-posts");
+      return PostResponseModel.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
 }
