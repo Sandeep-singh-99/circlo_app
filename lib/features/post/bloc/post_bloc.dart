@@ -50,8 +50,10 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   ) async {
     emit(PostLoading());
     try {
-      final response = await _postRepository.deletePost(event.id);
-      emit(PostSuccess(response));
+      await _postRepository.deletePost(event.id);
+      // After deleting, re-fetch own posts so the profile grid stays accurate
+      final ownPosts = await _postRepository.getOwnPosts();
+      emit(PostSuccess(ownPosts));
     } catch (e) {
       emit(PostFailure(e.toString()));
     }

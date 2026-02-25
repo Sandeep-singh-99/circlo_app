@@ -1,6 +1,9 @@
+import 'package:circlo_app/features/post/bloc/post_bloc.dart';
+import 'package:circlo_app/features/post/bloc/post_event.dart';
 import 'package:circlo_app/features/post/models/post_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 const _kPurple = Color(0xFF6C63FF);
@@ -91,11 +94,14 @@ class _ProfileGridPostCardState extends State<ProfileGridPostCard> {
   );
 
   void _openDetail(BuildContext context) {
+    // Capture the outer context so PostBloc is accessible inside the sheet
+    final outerContext = context;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ProfilePostDetailSheet(post: widget.post),
+      builder: (_) =>
+          ProfilePostDetailSheet(post: widget.post, outerContext: outerContext),
     );
   }
 }
@@ -109,7 +115,14 @@ class _ProfileGridPostCardState extends State<ProfileGridPostCard> {
 class ProfilePostDetailSheet extends StatefulWidget {
   final PostModel post;
 
-  const ProfilePostDetailSheet({super.key, required this.post});
+  /// The context from the widget tree above so [PostBloc] can be read.
+  final BuildContext outerContext;
+
+  const ProfilePostDetailSheet({
+    super.key,
+    required this.post,
+    required this.outerContext,
+  });
 
   @override
   State<ProfilePostDetailSheet> createState() => _ProfilePostDetailSheetState();
@@ -254,6 +267,18 @@ class _ProfilePostDetailSheetState extends State<ProfilePostDetailSheet> {
                               color: textPrimary,
                             ),
                           ),
+
+                          const SizedBox(width: 16),
+
+                          // Delete
+                          GestureDetector(
+                            onTap: () => _confirmDelete(context),
+                            child: const Icon(
+                              Icons.delete_outline_rounded,
+                              size: 25,
+                              color: Color(0xFFFF3B5C),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -290,6 +315,62 @@ class _ProfilePostDetailSheetState extends State<ProfilePostDetailSheet> {
         ),
       ),
     );
+  }
+
+  /// Shows a confirmation dialog; on confirm dispatches [PostDeleteRequested],
+  /// closes the sheet, and refreshes the profile grid.
+  Future<void> _confirmDelete(BuildContext sheetCtx) async {
+    final confirmed = await showDialog<bool>(
+      context: sheetCtx,
+      builder: (dialogCtx) {
+        final isDark = Theme.of(dialogCtx).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Delete Post',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to delete this post? This action cannot be undone.',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: isDark ? Colors.grey[400] : Colors.grey[700],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx, false),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.poppins(color: Colors.grey),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx, true),
+              child: Text(
+                'Delete',
+                style: GoogleFonts.poppins(
+                  color: const Color(0xFFFF3B5C),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && widget.post.id != null) {
+      final bloc = widget.outerContext.read<PostBloc>();
+      bloc.add(PostDeleteRequested(id: widget.post.id!));
+      if (mounted) Navigator.of(sheetCtx).pop();
+    }
   }
 
   Widget _buildCaption(String content, Color textPrimary, Color textSecondary) {
