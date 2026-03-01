@@ -1,11 +1,18 @@
+import 'package:circlo_app/features/auth/bloc/auth_bloc.dart';
+import 'package:circlo_app/features/auth/bloc/auth_state.dart';
+import 'package:circlo_app/features/comment/bloc/comment_bloc.dart';
+import 'package:circlo_app/features/comment/bloc/comment_event.dart';
+import 'package:circlo_app/features/comment/bloc/comment_state.dart';
 import 'package:circlo_app/features/post/bloc/post_bloc.dart';
 import 'package:circlo_app/features/post/bloc/post_event.dart';
 import 'package:circlo_app/features/post/bloc/post_state.dart';
 import 'package:circlo_app/features/post/models/post_model.dart';
+import 'package:circlo_app/widgets/comment_input_field.dart';
 import 'package:circlo_app/widgets/feed_post_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class PostDetailPage extends StatefulWidget {
@@ -18,11 +25,40 @@ class PostDetailPage extends StatefulWidget {
 }
 
 class _PostDetailPageState extends State<PostDetailPage> {
+  final TextEditingController _commentController = TextEditingController();
+  String? _editingCommentId;
+
   @override
   void initState() {
     super.initState();
-    // Fetch the post when page opens
     context.read<PostBloc>().add(PostGetByIdRequested(id: widget.postId));
+    context.read<CommentBloc>().add(CommentGetRequested(postId: widget.postId));
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  void _submitComment() {
+    final text = _commentController.text.trim();
+    if (text.isNotEmpty) {
+      if (_editingCommentId != null) {
+        context.read<CommentBloc>().add(
+          CommentUpdateRequested(id: _editingCommentId!, content: text),
+        );
+        setState(() {
+          _editingCommentId = null;
+        });
+      } else {
+        context.read<CommentBloc>().add(
+          CommentAddRequested(postId: widget.postId, content: text),
+        );
+      }
+      _commentController.clear();
+      FocusScope.of(context).unfocus();
+    }
   }
 
   @override
@@ -64,26 +100,36 @@ class _PostDetailPageState extends State<PostDetailPage> {
           ),
         ),
       ),
-      body: BlocBuilder<PostBloc, PostState>(
-        buildWhen: (prev, curr) =>
-            curr is PostDetailLoading ||
-            curr is PostDetailSuccess ||
-            curr is PostDetailFailure,
-        builder: (context, state) {
-          if (state is PostDetailLoading) {
-            return _buildLoading(isDark);
-          }
+      body: Column(
+        children: [
+          Expanded(
+            child: BlocBuilder<PostBloc, PostState>(
+              buildWhen: (prev, curr) =>
+                  curr is PostDetailLoading ||
+                  curr is PostDetailSuccess ||
+                  curr is PostDetailFailure,
+              builder: (context, state) {
+                if (state is PostDetailLoading) {
+                  return _buildLoading(isDark);
+                }
 
-          if (state is PostDetailSuccess) {
-            return _buildContent(state.post, isDark);
-          }
+                if (state is PostDetailSuccess) {
+                  return _buildContent(state.post, isDark);
+                }
 
-          if (state is PostDetailFailure) {
-            return _buildError(state.message, isDark);
-          }
+                if (state is PostDetailFailure) {
+                  return _buildError(state.message, isDark);
+                }
 
-          return _buildLoading(isDark);
-        },
+                return _buildLoading(isDark);
+              },
+            ),
+          ),
+          CommentInputField(
+            controller: _commentController,
+            onSubmit: _submitComment,
+          ),
+        ],
       ),
     );
   }
@@ -97,7 +143,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
           // Reuse FeedPostCard for consistent look
           FeedPostCard(post: post),
 
-          // ── Comments section placeholder ─────────────────────────
+          // ── Comments section ─────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Text(
@@ -109,17 +155,184 @@ class _PostDetailPageState extends State<PostDetailPage> {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'No comments yet. Be the first to comment!',
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: isDark ? Colors.grey[500] : Colors.grey[600],
-              ),
-            ),
+          BlocBuilder<CommentBloc, CommentState>(
+            builder: (context, state) {
+              if (state is CommentLoading) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              } else if (state is CommentError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'Failed to load comments: ${state.message}',
+                      style: TextStyle(
+                        color: isDark ? Colors.red[300] : Colors.red,
+                      ),
+                    ),
+                  ),
+                );
+              } else if (state is CommentLoaded) {
+                final comments = state.comments;
+                if (comments.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 24,
+                    ),
+                    child: Text(
+                      'No comments yet. Be the first to comment!',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: isDark ? Colors.grey[500] : Colors.grey[600],
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  itemCount: comments.length,
+                  itemBuilder: (context, index) {
+                    final comment = comments[index];
+                    final author = comment.user;
+                    final hasAvatar =
+                        author?.imageUrl != null &&
+                        author!.imageUrl!.isNotEmpty;
+                    final authorName = author?.name ?? 'Unknown';
+
+                    // Check if current user owns this comment
+                    final authState = context.read<AuthBloc>().state;
+                    final currentUserId = authState is AuthAuthenticated
+                        ? authState.user.id
+                        : null;
+                    final isOwner =
+                        currentUserId != null &&
+                        comment.userId == currentUserId;
+
+                    return Slidable(
+                      key: ValueKey(comment.id),
+                      enabled: isOwner,
+                      endActionPane: ActionPane(
+                        motion: const ScrollMotion(),
+                        extentRatio: 0.45,
+                        children: [
+                          SlidableAction(
+                            onPressed: (context) {
+                              setState(() {
+                                _editingCommentId = comment.id;
+                              });
+                              _commentController.text = comment.content;
+                              FocusScope.of(context).requestFocus();
+                            },
+                            backgroundColor: Colors.blueGrey.shade700,
+                            foregroundColor: Colors.white,
+                            icon: Icons.edit_rounded,
+                            label: 'Edit',
+                          ),
+                          SlidableAction(
+                            onPressed: (context) {
+                              context.read<CommentBloc>().add(
+                                CommentDeleteRequested(id: comment.id),
+                              );
+                            },
+                            backgroundColor: Colors.redAccent,
+                            foregroundColor: Colors.white,
+                            icon: Icons.delete_outline_rounded,
+                            label: 'Delete',
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(8),
+                              bottomLeft: Radius.circular(8),
+                            ),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Colors.grey[800],
+                              backgroundImage: hasAvatar
+                                  ? NetworkImage(author.imageUrl ?? '')
+                                  : null,
+                              child: !hasAvatar
+                                  ? Text(
+                                      authorName.isNotEmpty
+                                          ? authorName[0].toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        authorName,
+                                        style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _timeAgo(comment.createdAt),
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 11,
+                                          color: isDark
+                                              ? Colors.grey[500]
+                                              : Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    comment.content,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
+              return const SizedBox();
+            },
           ),
-          const SizedBox(height: 100),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -196,5 +409,20 @@ class _PostDetailPageState extends State<PostDetailPage> {
         ),
       ),
     );
+  }
+
+  String _timeAgo(String? iso) {
+    if (iso == null) return '';
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final diff = DateTime.now().difference(dt);
+      if (diff.inMinutes < 1) return 'now';
+      if (diff.inHours < 1) return '${diff.inMinutes}m';
+      if (diff.inDays < 1) return '${diff.inHours}h';
+      if (diff.inDays < 7) return '${diff.inDays}d';
+      return '${dt.day}/${dt.month}/${dt.year}';
+    } catch (_) {
+      return '';
+    }
   }
 }

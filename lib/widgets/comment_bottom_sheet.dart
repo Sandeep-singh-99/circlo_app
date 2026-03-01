@@ -1,9 +1,13 @@
+import 'package:circlo_app/features/auth/bloc/auth_bloc.dart';
+import 'package:circlo_app/features/auth/bloc/auth_state.dart';
 import 'package:circlo_app/features/comment/bloc/comment_bloc.dart';
 import 'package:circlo_app/features/comment/bloc/comment_event.dart';
 import 'package:circlo_app/features/comment/bloc/comment_state.dart';
 import 'package:circlo_app/widgets/comment_input_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CommentBottomSheet extends StatefulWidget {
@@ -26,6 +30,7 @@ class CommentBottomSheet extends StatefulWidget {
 
 class _CommentBottomSheetState extends State<CommentBottomSheet> {
   final TextEditingController _controller = TextEditingController();
+  String? _editingCommentId;
 
   @override
   void initState() {
@@ -42,9 +47,18 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
   void _submitComment() {
     final text = _controller.text.trim();
     if (text.isNotEmpty) {
-      context.read<CommentBloc>().add(
-        CommentAddRequested(postId: widget.postId, content: text),
-      );
+      if (_editingCommentId != null) {
+        context.read<CommentBloc>().add(
+          CommentUpdateRequested(id: _editingCommentId!, content: text),
+        );
+        setState(() {
+          _editingCommentId = null;
+        });
+      } else {
+        context.read<CommentBloc>().add(
+          CommentAddRequested(postId: widget.postId, content: text),
+        );
+      }
       _controller.clear();
       // Optimistically hide keyboard
       FocusScope.of(context).unfocus();
@@ -128,67 +142,110 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                           author!.imageUrl!.isNotEmpty;
                       final authorName = author?.name ?? 'Unknown';
 
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      // Check if current user owns this comment
+                      final authState = context.read<AuthBloc>().state;
+                      final currentUserId = authState is AuthAuthenticated
+                          ? authState.user.id
+                          : null;
+                      final isOwner =
+                          currentUserId != null &&
+                          comment.userId == currentUserId;
+
+                      return Slidable(
+                        key: ValueKey(comment.id),
+                        enabled: isOwner,
+                        endActionPane: ActionPane(
+                          motion: const ScrollMotion(),
+                          extentRatio: 0.45,
                           children: [
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Colors.grey[800],
-                              backgroundImage: hasAvatar
-                                  ? NetworkImage(author.imageUrl ?? '')
-                                  : null,
-                              child: !hasAvatar
-                                  ? Text(
-                                      authorName.isNotEmpty
-                                          ? authorName[0].toUpperCase()
-                                          : '?',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    )
-                                  : null,
+                            SlidableAction(
+                              onPressed: (context) {
+                                setState(() {
+                                  _editingCommentId = comment.id;
+                                });
+                                _controller.text = comment.content;
+                                FocusScope.of(context).requestFocus();
+                              },
+                              backgroundColor: Colors.blueGrey.shade700,
+                              foregroundColor: Colors.white,
+                              icon: Icons.edit_rounded,
+                              label: 'Edit',
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        authorName,
-                                        style: GoogleFonts.poppins(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13,
-                                          color: textPrimary,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _timeAgo(comment.createdAt),
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 11,
-                                          color: textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    comment.content,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      color: textPrimary,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            SlidableAction(
+                              onPressed: (context) {
+                                context.read<CommentBloc>().add(
+                                  CommentDeleteRequested(id: comment.id),
+                                );
+                              },
+                              backgroundColor: Colors.redAccent,
+                              foregroundColor: Colors.white,
+                              icon: Icons.delete_outline_rounded,
+                              label: 'Delete',
                             ),
                           ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor: Colors.grey[800],
+                                backgroundImage: hasAvatar
+                                    ? NetworkImage(author.imageUrl ?? '')
+                                    : null,
+                                child: !hasAvatar
+                                    ? Text(
+                                        authorName.isNotEmpty
+                                            ? authorName[0].toUpperCase()
+                                            : '?',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          authorName,
+                                          style: GoogleFonts.poppins(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13,
+                                            color: textPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _timeAgo(comment.createdAt),
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 11,
+                                            color: textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      comment.content,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: textPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
