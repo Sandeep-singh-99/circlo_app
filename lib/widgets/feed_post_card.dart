@@ -1,5 +1,9 @@
+import 'package:circlo_app/features/like/bloc/like_bloc.dart';
+import 'package:circlo_app/features/like/bloc/like_event.dart';
+import 'package:circlo_app/features/like/bloc/like_state.dart';
 import 'package:circlo_app/features/post/models/post_model.dart';
 import 'package:circlo_app/router/route.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:circlo_app/widgets/feed_post_actions.dart';
 import 'package:circlo_app/widgets/feed_post_caption.dart';
 import 'package:circlo_app/widgets/feed_post_header.dart';
@@ -90,6 +94,11 @@ class _FeedPostCardState extends State<FeedPostCard>
       _likeCount += _isLiked ? 1 : -1;
     });
     _heartController.forward(from: 0);
+
+    final postId = widget.post.id;
+    if (postId != null) {
+      context.read<LikeBloc>().add(ToggleLike(postId));
+    }
   }
 
   void _onDoubleTap() {
@@ -99,6 +108,11 @@ class _FeedPostCardState extends State<FeedPostCard>
         _likeCount++;
       });
       _heartController.forward(from: 0);
+
+      final postId = widget.post.id;
+      if (postId != null) {
+        context.read<LikeBloc>().add(ToggleLike(postId));
+      }
     }
     _heartOverlayController.forward(from: 0);
     HapticFeedback.mediumImpact();
@@ -134,96 +148,118 @@ class _FeedPostCardState extends State<FeedPostCard>
     final divider = isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0);
     final commentCount = (_likeCount * 0.3).round();
 
-    return GestureDetector(
-      onTap: _navigateToDetail,
-      child: Container(
-        color: bg,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header ──────────────────────────────────────────────
-            FeedPostHeader(
-              post: widget.post,
-              timeAgo: _timeAgo(widget.post.createdAt),
-              onMoreTap: () => showFeedPostOptions(context),
-            ),
-
-            // ── Image ───────────────────────────────────────────────
-            if (widget.post.imageUrl != null)
-              FeedPostImage(
-                imageUrl: widget.post.imageUrl!,
-                onDoubleTap: _onDoubleTap,
-                heartOverlayController: _heartOverlayController,
-                heartOverlayScale: _heartOverlayScale,
-                heartOverlayOpacity: _heartOverlayOpacity,
+    return BlocListener<LikeBloc, LikeState>(
+      listenWhen: (_, state) =>
+          (state is LikeToggled && state.postId == widget.post.id) ||
+          state is LikeError,
+      listener: (context, state) {
+        if (state is LikeError) {
+          // Revert optimistic update on failure
+          if (mounted) {
+            setState(() {
+              _isLiked = !_isLiked;
+              _likeCount += _isLiked ? 1 : -1;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+        }
+      },
+      child: GestureDetector(
+        onTap: _navigateToDetail,
+        child: Container(
+          color: bg,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Header ──────────────────────────────────────────────
+              FeedPostHeader(
+                post: widget.post,
+                timeAgo: _timeAgo(widget.post.createdAt),
+                onMoreTap: () => showFeedPostOptions(context),
               ),
 
-            // ── Actions ─────────────────────────────────────────────
-            if (widget.post.id != null)
-              FeedPostActions(
-                postId: widget.post.id!,
-                isLiked: _isLiked,
-                onToggleLike: _toggleLike,
-                heartScale: _heartScale,
-              ),
+              // ── Image ───────────────────────────────────────────────
+              if (widget.post.imageUrl != null)
+                FeedPostImage(
+                  imageUrl: widget.post.imageUrl!,
+                  onDoubleTap: _onDoubleTap,
+                  heartOverlayController: _heartOverlayController,
+                  heartOverlayScale: _heartOverlayScale,
+                  heartOverlayOpacity: _heartOverlayOpacity,
+                ),
 
-            // ── Like count ──────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Text(
-                '${_formatCount(_likeCount)} likes',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: textPrimary,
+              // ── Actions ─────────────────────────────────────────────
+              if (widget.post.id != null)
+                FeedPostActions(
+                  postId: widget.post.id!,
+                  isLiked: _isLiked,
+                  onToggleLike: _toggleLike,
+                  heartScale: _heartScale,
+                ),
+
+              // ── Like count ──────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Text(
+                  '${_formatCount(_likeCount)} likes',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: textPrimary,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 4),
+              const SizedBox(height: 4),
 
-            // ── Caption ─────────────────────────────────────────────
-            if (widget.post.content.isNotEmpty)
-              FeedPostCaption(
-                authorName: widget.post.user?.name ?? 'Unknown',
-                content: widget.post.content,
-              ),
+              // ── Caption ─────────────────────────────────────────────
+              if (widget.post.content.isNotEmpty)
+                FeedPostCaption(
+                  authorName: widget.post.user?.name ?? 'Unknown',
+                  content: widget.post.content,
+                ),
 
-            // ── Comment hint ────────────────────────────────────────
-            if (commentCount > 0)
+              // ── Comment hint ────────────────────────────────────────
+              if (commentCount > 0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 2,
+                  ),
+                  child: Text(
+                    'View all $commentCount comments',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.5,
+                      color: textSecondary,
+                    ),
+                  ),
+                ),
+
+              // ── Time ────────────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 2,
+                padding: const EdgeInsets.only(
+                  left: 14,
+                  right: 14,
+                  top: 4,
+                  bottom: 10,
                 ),
                 child: Text(
-                  'View all $commentCount comments',
+                  _timeAgo(widget.post.createdAt).toUpperCase(),
                   style: GoogleFonts.poppins(
-                    fontSize: 12.5,
-                    color: textSecondary,
+                    fontSize: 10,
+                    letterSpacing: 0.5,
+                    color: textSecondary.withOpacity(0.55),
                   ),
                 ),
               ),
 
-            // ── Time ────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.only(
-                left: 14,
-                right: 14,
-                top: 4,
-                bottom: 10,
-              ),
-              child: Text(
-                _timeAgo(widget.post.createdAt).toUpperCase(),
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  letterSpacing: 0.5,
-                  color: textSecondary.withOpacity(0.55),
-                ),
-              ),
-            ),
-
-            Divider(height: 1, thickness: 0.5, color: divider),
-          ],
+              Divider(height: 1, thickness: 0.5, color: divider),
+            ],
+          ),
         ),
       ),
     );

@@ -5,10 +5,11 @@ import 'package:circlo_app/features/auth/bloc/auth_state.dart';
 import 'package:circlo_app/features/auth/repository/auth_repository.dart';
 import 'package:circlo_app/features/bookmark/bloc/bookmark_bloc.dart';
 import 'package:circlo_app/features/bookmark/repository/bookmark_repository.dart';
+import 'package:circlo_app/features/like/bloc/like_bloc.dart';
+import 'package:circlo_app/features/like/repository/like_repository.dart';
 import 'package:circlo_app/features/post/bloc/post_bloc.dart';
 import 'package:circlo_app/features/post/repository/post_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:circlo_app/config/theme.dart';
 import 'package:circlo_app/router/route.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,7 @@ void main() {
         ),
         BlocProvider(create: (context) => PostBloc(PostRepository())),
         BlocProvider(create: (context) => BookmarkBloc(BookmarkRepository())),
+        BlocProvider(create: (context) => LikeBloc(LikeRepository())),
       ],
       child: const MyApp(),
     ),
