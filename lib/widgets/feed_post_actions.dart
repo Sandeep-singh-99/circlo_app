@@ -2,6 +2,7 @@ import 'package:circlo_app/features/bookmark/bloc/bookmark_bloc.dart';
 import 'package:circlo_app/features/bookmark/bloc/bookmark_event.dart';
 import 'package:circlo_app/features/bookmark/bloc/bookmark_state.dart';
 import 'package:circlo_app/widgets/animated_icon_widget.dart';
+import 'package:circlo_app/widgets/comment_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -55,7 +56,7 @@ class _FeedPostActionsState extends State<FeedPostActions> {
 
           // Comment
           GestureDetector(
-            onTap: () {},
+            onTap: () => CommentBottomSheet.show(context, widget.postId),
             child: Icon(
               Icons.chat_bubble_outline_rounded,
               color: textPrimary,
