@@ -1,3 +1,4 @@
+import 'package:circlo_app/core/utils/app_toast.dart';
 import 'package:circlo_app/features/like/bloc/like_bloc.dart';
 import 'package:circlo_app/features/like/bloc/like_event.dart';
 import 'package:circlo_app/features/like/bloc/like_state.dart';
@@ -25,8 +26,8 @@ class FeedPostCard extends StatefulWidget {
 
 class _FeedPostCardState extends State<FeedPostCard>
     with TickerProviderStateMixin {
-  bool _isLiked = false;
-  int _likeCount = 0;
+  late bool _isLiked;
+  late int _likeCount;
 
   late AnimationController _heartController;
   late Animation<double> _heartScale;
@@ -37,7 +38,8 @@ class _FeedPostCardState extends State<FeedPostCard>
   @override
   void initState() {
     super.initState();
-    _likeCount = (widget.post.id?.hashCode.abs() ?? 0) % 800 + 10;
+    _isLiked = widget.post.likedByMe;
+    _likeCount = widget.post.totalLikes;
 
     _heartController = AnimationController(
       vsync: this,
@@ -89,6 +91,8 @@ class _FeedPostCardState extends State<FeedPostCard>
 
   void _toggleLike() {
     HapticFeedback.lightImpact();
+    // Optimistic update
+    final wasLiked = _isLiked;
     setState(() {
       _isLiked = !_isLiked;
       _likeCount += _isLiked ? 1 : -1;
@@ -98,11 +102,20 @@ class _FeedPostCardState extends State<FeedPostCard>
     final postId = widget.post.id;
     if (postId != null) {
       context.read<LikeBloc>().add(ToggleLike(postId));
+    } else {
+      // Revert if no postId
+      setState(() {
+        _isLiked = wasLiked;
+        _likeCount += wasLiked ? 1 : -1;
+      });
     }
   }
 
   void _onDoubleTap() {
+    _heartOverlayController.forward(from: 0);
+    HapticFeedback.mediumImpact();
     if (!_isLiked) {
+      // Optimistic update
       setState(() {
         _isLiked = true;
         _likeCount++;
@@ -114,8 +127,6 @@ class _FeedPostCardState extends State<FeedPostCard>
         context.read<LikeBloc>().add(ToggleLike(postId));
       }
     }
-    _heartOverlayController.forward(from: 0);
-    HapticFeedback.mediumImpact();
   }
 
   String _formatCount(int count) {
@@ -153,19 +164,38 @@ class _FeedPostCardState extends State<FeedPostCard>
           (state is LikeToggled && state.postId == widget.post.id) ||
           state is LikeError,
       listener: (context, state) {
-        if (state is LikeError) {
+        if (state is LikeToggled && state.postId == widget.post.id) {
+          // Sync with server truth
+          if (mounted) {
+            setState(() {
+              _isLiked = state.liked;
+              _likeCount = state.totalLikes;
+            });
+            AppToast.show(
+              context,
+              icon: Icon(
+                state.liked
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                size: 18,
+                color: state.liked
+                    ? const Color(0xFFFF3B5C)
+                    : (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.black87
+                          : Colors.white),
+              ),
+              message: state.liked ? 'Liked!' : 'Unliked',
+              duration: const Duration(milliseconds: 1500),
+            );
+          }
+        } else if (state is LikeError) {
           // Revert optimistic update on failure
           if (mounted) {
             setState(() {
               _isLiked = !_isLiked;
               _likeCount += _isLiked ? 1 : -1;
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.redAccent,
-              ),
-            );
+            AppToast.show(context, message: state.message, isError: true);
           }
         }
       },

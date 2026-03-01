@@ -1,3 +1,4 @@
+import 'package:circlo_app/core/utils/app_toast.dart';
 import 'package:circlo_app/features/bookmark/bloc/bookmark_bloc.dart';
 import 'package:circlo_app/features/bookmark/bloc/bookmark_event.dart';
 import 'package:circlo_app/features/bookmark/bloc/bookmark_state.dart';
@@ -6,7 +7,6 @@ import 'package:circlo_app/widgets/comment_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class FeedPostActions extends StatefulWidget {
   final String postId;
@@ -82,42 +82,21 @@ class _FeedPostActionsState extends State<FeedPostActions> {
                 (state is BookmarkToggled && state.postId == widget.postId) ||
                 state is BookmarkError,
             listener: (context, state) {
-              final bgColor = isDark ? Colors.white : Colors.black87;
-              final textColor = isDark ? Colors.black87 : Colors.white;
-
               if (state is BookmarkToggled) {
                 setState(() => _isBookmarked = state.bookmarked);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      state.message,
-                      style: GoogleFonts.poppins(
-                        color: textColor,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                      ),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    duration: const Duration(seconds: 2),
-                    backgroundColor: bgColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    margin: const EdgeInsets.all(16),
+                AppToast.show(
+                  context,
+                  icon: Icon(
+                    state.bookmarked
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_border_rounded,
+                    size: 18,
+                    color: isDark ? Colors.black87 : Colors.white,
                   ),
+                  message: state.message,
                 );
               } else if (state is BookmarkError) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.message),
-                    behavior: SnackBarBehavior.floating,
-                    backgroundColor: Colors.redAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    margin: const EdgeInsets.all(16),
-                  ),
-                );
+                AppToast.show(context, message: state.message, isError: true);
               }
             },
             builder: (context, state) {

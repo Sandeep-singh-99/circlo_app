@@ -7,12 +7,12 @@ class LikeLoading extends LikeState {}
 class LikeToggled extends LikeState {
   final String postId;
   final bool liked;
-  final String message;
+  final int totalLikes;
 
   LikeToggled({
     required this.postId,
     required this.liked,
-    required this.message,
+    required this.totalLikes,
   });
 }
 

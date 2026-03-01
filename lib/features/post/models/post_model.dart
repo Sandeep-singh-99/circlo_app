@@ -13,6 +13,8 @@ final class PostModel {
   final String? userId;
   final AuthModel? user;
   final List<PostHashtag> hashtags;
+  final bool likedByMe;
+  final int totalLikes;
 
   PostModel({
     this.id,
@@ -26,6 +28,8 @@ final class PostModel {
     this.userId,
     this.user,
     this.hashtags = const [],
+    this.likedByMe = false,
+    this.totalLikes = 0,
   });
 
   factory PostModel.fromJson(Map<String, dynamic> json) {
@@ -47,6 +51,8 @@ final class PostModel {
                 .map((e) => PostHashtag.fromJson(e as Map<String, dynamic>))
                 .toList()
           : [],
+      likedByMe: json['likedByMe'] as bool? ?? false,
+      totalLikes: json['totalLikes'] as int? ?? 0,
     );
   }
 }
