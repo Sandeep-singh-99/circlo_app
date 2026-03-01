@@ -1,5 +1,8 @@
 import 'package:circlo_app/features/auth/bloc/auth_bloc.dart';
 import 'package:circlo_app/features/auth/bloc/auth_state.dart';
+import 'package:circlo_app/features/bookmark/bloc/bookmark_bloc.dart';
+import 'package:circlo_app/features/bookmark/bloc/bookmark_event.dart';
+import 'package:circlo_app/features/bookmark/bloc/bookmark_state.dart';
 import 'package:circlo_app/features/post/models/post_model.dart';
 import 'package:circlo_app/router/route.dart';
 import 'package:flutter/material.dart';
@@ -473,22 +476,72 @@ class _FeedPostCardState extends State<FeedPostCard>
           const Spacer(),
 
           // Bookmark
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              setState(() => _isBookmarked = !_isBookmarked);
+          BlocConsumer<BookmarkBloc, BookmarkState>(
+            listenWhen: (_, state) =>
+                (state is BookmarkToggled && state.postId == widget.post.id) ||
+                state is BookmarkError,
+            listener: (context, state) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final bgColor = isDark ? Colors.white : Colors.black87;
+              final textColor = isDark ? Colors.black87 : Colors.white;
+
+              if (state is BookmarkToggled) {
+                setState(() => _isBookmarked = state.bookmarked);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      state.message,
+                      style: GoogleFonts.poppins(
+                        color: textColor,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 2),
+                    backgroundColor: bgColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    margin: const EdgeInsets.all(16),
+                  ),
+                );
+              } else if (state is BookmarkError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: Colors.redAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    margin: const EdgeInsets.all(16),
+                  ),
+                );
+              }
             },
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Icon(
-                _isBookmarked
-                    ? Icons.bookmark_rounded
-                    : Icons.bookmark_border_rounded,
-                key: ValueKey(_isBookmarked),
-                color: _isBookmarked ? const Color(0xFF6C63FF) : textPrimary,
-                size: 27,
-              ),
-            ),
+            builder: (context, state) {
+              return GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  final postId = widget.post.id;
+                  if (postId != null) {
+                    context.read<BookmarkBloc>().add(ToggleBookmark(postId));
+                  }
+                },
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    _isBookmarked
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_border_rounded,
+                    key: ValueKey(_isBookmarked),
+                    color: textPrimary,
+                    size: 27,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -521,9 +574,9 @@ class _FeedPostCardState extends State<FeedPostCard>
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   color: isHashtag
-                      ? const Color(0xFF6C63FF)
+                      ? textPrimary
                       : textPrimary.withOpacity(0.88),
-                  fontWeight: isHashtag ? FontWeight.w500 : FontWeight.normal,
+                  fontWeight: isHashtag ? FontWeight.w600 : FontWeight.normal,
                 ),
               );
             }),

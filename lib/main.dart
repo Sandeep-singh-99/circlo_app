@@ -3,6 +3,8 @@ import 'package:circlo_app/features/auth/bloc/auth_bloc.dart';
 import 'package:circlo_app/features/auth/bloc/auth_event.dart';
 import 'package:circlo_app/features/auth/bloc/auth_state.dart';
 import 'package:circlo_app/features/auth/repository/auth_repository.dart';
+import 'package:circlo_app/features/bookmark/bloc/bookmark_bloc.dart';
+import 'package:circlo_app/features/bookmark/repository/bookmark_repository.dart';
 import 'package:circlo_app/features/post/bloc/post_bloc.dart';
 import 'package:circlo_app/features/post/repository/post_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,6 +23,7 @@ void main() {
                 ..add(AuthCheckRequested()),
         ),
         BlocProvider(create: (context) => PostBloc(PostRepository())),
+        BlocProvider(create: (context) => BookmarkBloc(BookmarkRepository())),
       ],
       child: const MyApp(),
     ),
