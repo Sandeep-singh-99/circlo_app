@@ -13,8 +13,11 @@ final class PostModel {
   final String? userId;
   final AuthModel? user;
   final List<PostHashtag> hashtags;
-  final bool likedByMe;
-  final int totalLikes;
+  final bool isLiked;
+  final bool isBookmarked;
+  final int likesCount;
+  final int commentsCount;
+  final int bookmarksCount;
 
   PostModel({
     this.id,
@@ -28,8 +31,11 @@ final class PostModel {
     this.userId,
     this.user,
     this.hashtags = const [],
-    this.likedByMe = false,
-    this.totalLikes = 0,
+    this.isLiked = false,
+    this.isBookmarked = false,
+    this.likesCount = 0,
+    this.commentsCount = 0,
+    this.bookmarksCount = 0,
   });
 
   factory PostModel.fromJson(Map<String, dynamic> json) {
@@ -51,8 +57,11 @@ final class PostModel {
                 .map((e) => PostHashtag.fromJson(e as Map<String, dynamic>))
                 .toList()
           : [],
-      likedByMe: json['likedByMe'] as bool? ?? false,
-      totalLikes: json['totalLikes'] as int? ?? 0,
+      isLiked: json['isLiked'] as bool? ?? false,
+      isBookmarked: json['isBookmarked'] as bool? ?? false,
+      likesCount: json['likesCount'] as int? ?? 0,
+      commentsCount: json['commentsCount'] as int? ?? 0,
+      bookmarksCount: json['bookmarksCount'] as int? ?? 0,
     );
   }
 }

@@ -1,3 +1,9 @@
+import 'package:circlo_app/features/bookmark/bloc/bookmark_bloc.dart';
+import 'package:circlo_app/features/bookmark/bloc/bookmark_event.dart';
+import 'package:circlo_app/features/bookmark/bloc/bookmark_state.dart';
+import 'package:circlo_app/features/like/bloc/like_bloc.dart';
+import 'package:circlo_app/features/like/bloc/like_event.dart';
+import 'package:circlo_app/features/like/bloc/like_state.dart';
 import 'package:circlo_app/features/post/bloc/post_bloc.dart';
 import 'package:circlo_app/features/post/bloc/post_event.dart';
 import 'package:circlo_app/features/post/models/post_model.dart';
@@ -129,14 +135,16 @@ class ProfilePostDetailSheet extends StatefulWidget {
 }
 
 class _ProfilePostDetailSheetState extends State<ProfilePostDetailSheet> {
-  bool _isLiked = false;
-  bool _isBookmarked = false;
+  late bool _isLiked;
+  late bool _isBookmarked;
   late int _likeCount;
 
   @override
   void initState() {
     super.initState();
-    _likeCount = (widget.post.id?.hashCode.abs() ?? 0) % 800 + 10;
+    _isLiked = widget.post.isLiked;
+    _isBookmarked = widget.post.isBookmarked;
+    _likeCount = widget.post.likesCount;
   }
 
   @override
@@ -146,172 +154,225 @@ class _ProfilePostDetailSheetState extends State<ProfilePostDetailSheet> {
     final textPrimary = isDark ? Colors.white : Colors.black87;
     final textSecondary = isDark ? Colors.grey[400]! : Colors.grey[600]!;
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.75,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
-      builder: (ctx, scrollCtrl) => Container(
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+    return MultiBlocListener(
+      listeners: [
+        // Sync like state from server
+        BlocListener<LikeBloc, LikeState>(
+          listenWhen: (_, s) =>
+              (s is LikeToggled && s.postId == widget.post.id) ||
+              s is LikeError,
+          listener: (context, state) {
+            if (state is LikeToggled && mounted) {
+              setState(() {
+                _isLiked = state.liked;
+                _likeCount = state.totalLikes;
+              });
+            } else if (state is LikeError && mounted) {
+              // Revert optimistic update
+              setState(() {
+                _isLiked = !_isLiked;
+                _likeCount += _isLiked ? 1 : -1;
+              });
+            }
+          },
         ),
-        child: Column(
-          children: [
-            // ── Handle ─────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 8),
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[600],
-                  borderRadius: BorderRadius.circular(2),
+        // Sync bookmark state from server
+        BlocListener<BookmarkBloc, BookmarkState>(
+          listenWhen: (_, s) =>
+              (s is BookmarkToggled && s.postId == widget.post.id) ||
+              s is BookmarkError,
+          listener: (context, state) {
+            if (state is BookmarkToggled && mounted) {
+              setState(() => _isBookmarked = state.bookmarked);
+            } else if (state is BookmarkError && mounted) {
+              setState(() => _isBookmarked = !_isBookmarked);
+            }
+          },
+        ),
+      ],
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        builder: (ctx, scrollCtrl) => Container(
+          decoration: BoxDecoration(
+            color: sheetBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // ── Handle ─────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 8),
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[600],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
 
-            Expanded(
-              child: SingleChildScrollView(
-                controller: scrollCtrl,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Image ───────────────────────────────────────
-                    if (widget.post.imageUrl != null)
-                      AspectRatio(
-                        aspectRatio: 1,
-                        child: Image.network(
-                          widget.post.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, e, _) => Container(
-                            color: const Color(0xFF1A1A1A),
-                            child: const Icon(
-                              Icons.broken_image_rounded,
-                              color: Colors.grey,
-                              size: 48,
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollCtrl,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── Image ───────────────────────────────────────
+                      if (widget.post.imageUrl != null)
+                        AspectRatio(
+                          aspectRatio: 1,
+                          child: Image.network(
+                            widget.post.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, e, _) => Container(
+                              color: const Color(0xFF1A1A1A),
+                              child: const Icon(
+                                Icons.broken_image_rounded,
+                                color: Colors.grey,
+                                size: 48,
+                              ),
                             ),
+                          ),
+                        ),
+
+                      // ── Like count ──────────────────────────────────
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+                        child: Text(
+                          '$_likeCount likes',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: textPrimary,
                           ),
                         ),
                       ),
 
-                    // ── Like count ──────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-                      child: Text(
-                        '$_likeCount likes',
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: textPrimary,
+                      // ── Action row ──────────────────────────────────
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
                         ),
-                      ),
-                    ),
-
-                    // ── Action row ──────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      child: Row(
-                        children: [
-                          // Like
-                          GestureDetector(
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              setState(() {
-                                _isLiked = !_isLiked;
-                                _likeCount += _isLiked ? 1 : -1;
-                              });
-                            },
-                            child: Icon(
-                              _isLiked
-                                  ? Icons.favorite_rounded
-                                  : Icons.favorite_border_rounded,
-                              size: 26,
-                              color: _isLiked
-                                  ? const Color(0xFFFF3B5C)
-                                  : textPrimary,
+                        child: Row(
+                          children: [
+                            // Like
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                // Optimistic update
+                                setState(() {
+                                  _isLiked = !_isLiked;
+                                  _likeCount += _isLiked ? 1 : -1;
+                                });
+                                if (widget.post.id != null) {
+                                  context.read<LikeBloc>().add(
+                                    ToggleLike(widget.post.id!),
+                                  );
+                                }
+                              },
+                              child: Icon(
+                                _isLiked
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                size: 26,
+                                color: _isLiked
+                                    ? const Color(0xFFFF3B5C)
+                                    : textPrimary,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 16),
+                            const SizedBox(width: 16),
 
-                          // Comment
-                          Icon(
-                            Icons.chat_bubble_outline_rounded,
-                            size: 24,
-                            color: textPrimary,
-                          ),
-                          const SizedBox(width: 16),
-
-                          // Share
-                          Icon(
-                            Icons.send_rounded,
-                            size: 23,
-                            color: textPrimary,
-                          ),
-
-                          const Spacer(),
-
-                          // Bookmark
-                          GestureDetector(
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              setState(() => _isBookmarked = !_isBookmarked);
-                            },
-                            child: Icon(
-                              _isBookmarked
-                                  ? Icons.bookmark_rounded
-                                  : Icons.bookmark_border_rounded,
-                              size: 26,
+                            // Comment
+                            Icon(
+                              Icons.chat_bubble_outline_rounded,
+                              size: 24,
                               color: textPrimary,
                             ),
+                            const SizedBox(width: 16),
+
+                            // Share
+                            Icon(
+                              Icons.send_rounded,
+                              size: 23,
+                              color: textPrimary,
+                            ),
+
+                            const Spacer(),
+
+                            // Bookmark
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                // Optimistic update
+                                setState(() => _isBookmarked = !_isBookmarked);
+                                if (widget.post.id != null) {
+                                  context.read<BookmarkBloc>().add(
+                                    ToggleBookmark(widget.post.id!),
+                                  );
+                                }
+                              },
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                child: Icon(
+                                  _isBookmarked
+                                      ? Icons.bookmark_rounded
+                                      : Icons.bookmark_border_rounded,
+                                  key: ValueKey(_isBookmarked),
+                                  size: 26,
+                                  color: textPrimary,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(width: 16),
+
+                            // Delete
+                            GestureDetector(
+                              onTap: () => _confirmDelete(context),
+                              child: const Icon(
+                                Icons.delete_outline_rounded,
+                                size: 25,
+                                color: Color(0xFFFF3B5C),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ── Caption ─────────────────────────────────────
+                      if (widget.post.content.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 2, 14, 6),
+                          child: _buildCaption(
+                            widget.post.content,
+                            textPrimary,
+                            textSecondary,
                           ),
+                        ),
 
-                          const SizedBox(width: 16),
-
-                          // Delete
-                          GestureDetector(
-                            onTap: () => _confirmDelete(context),
-                            child: const Icon(
-                              Icons.delete_outline_rounded,
-                              size: 25,
-                              color: Color(0xFFFF3B5C),
+                      // ── Date ────────────────────────────────────────
+                      if (widget.post.createdAt != null)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 2, 14, 24),
+                          child: Text(
+                            _formatDate(widget.post.createdAt!).toUpperCase(),
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              letterSpacing: 0.4,
+                              color: textSecondary,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-
-                    // ── Caption ─────────────────────────────────────
-                    if (widget.post.content.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 2, 14, 6),
-                        child: _buildCaption(
-                          widget.post.content,
-                          textPrimary,
-                          textSecondary,
                         ),
-                      ),
-
-                    // ── Date ────────────────────────────────────────
-                    if (widget.post.createdAt != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 2, 14, 24),
-                        child: Text(
-                          _formatDate(widget.post.createdAt!).toUpperCase(),
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            letterSpacing: 0.4,
-                            color: textSecondary,
-                          ),
-                        ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

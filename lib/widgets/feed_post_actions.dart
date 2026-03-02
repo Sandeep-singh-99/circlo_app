@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class FeedPostActions extends StatefulWidget {
   final String postId;
   final bool isLiked;
+  final bool isBookmarked;
   final VoidCallback onToggleLike;
   final Animation<double> heartScale;
 
@@ -18,6 +19,7 @@ class FeedPostActions extends StatefulWidget {
     super.key,
     required this.postId,
     required this.isLiked,
+    required this.isBookmarked,
     required this.onToggleLike,
     required this.heartScale,
   });
@@ -27,7 +29,13 @@ class FeedPostActions extends StatefulWidget {
 }
 
 class _FeedPostActionsState extends State<FeedPostActions> {
-  bool _isBookmarked = false;
+  late bool _isBookmarked;
+
+  @override
+  void initState() {
+    super.initState();
+    _isBookmarked = widget.isBookmarked;
+  }
 
   @override
   Widget build(BuildContext context) {

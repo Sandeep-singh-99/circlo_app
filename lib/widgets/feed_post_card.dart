@@ -38,8 +38,8 @@ class _FeedPostCardState extends State<FeedPostCard>
   @override
   void initState() {
     super.initState();
-    _isLiked = widget.post.likedByMe;
-    _likeCount = widget.post.totalLikes;
+    _isLiked = widget.post.isLiked;
+    _likeCount = widget.post.likesCount;
 
     _heartController = AnimationController(
       vsync: this,
@@ -157,7 +157,7 @@ class _FeedPostCardState extends State<FeedPostCard>
     final textPrimary = isDark ? Colors.white : Colors.black87;
     final textSecondary = isDark ? Colors.grey[400]! : Colors.grey[600]!;
     final divider = isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0);
-    final commentCount = (_likeCount * 0.3).round();
+    final commentCount = widget.post.commentsCount;
 
     return BlocListener<LikeBloc, LikeState>(
       listenWhen: (_, state) =>
@@ -228,6 +228,7 @@ class _FeedPostCardState extends State<FeedPostCard>
                 FeedPostActions(
                   postId: widget.post.id!,
                   isLiked: _isLiked,
+                  isBookmarked: widget.post.isBookmarked,
                   onToggleLike: _toggleLike,
                   heartScale: _heartScale,
                 ),
