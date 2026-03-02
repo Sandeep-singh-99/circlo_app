@@ -29,11 +29,13 @@ class FeedPostHeader extends StatelessWidget {
     final authorName = author?.name ?? 'Unknown';
 
     // Hide Follow button on own posts
+    // The backend formatted response embeds userId inside the `user` object,
+    // not as a top-level `userId` field, so compare via post.user?.id.
     final authState = context.read<AuthBloc>().state;
     final loggedInUserId = authState is AuthAuthenticated
         ? authState.user.id
         : null;
-    final isOwnPost = loggedInUserId != null && loggedInUserId == post.userId;
+    final isOwnPost = loggedInUserId != null && loggedInUserId == post.user?.id;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
