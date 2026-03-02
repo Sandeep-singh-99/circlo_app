@@ -9,9 +9,11 @@ import 'package:circlo_app/features/post/models/post_model.dart';
 import 'package:circlo_app/widgets/gradient_avatar_ring.dart';
 import 'package:circlo_app/widgets/profile_grid_post_card.dart';
 import 'package:circlo_app/widgets/profile_stat_column.dart';
+import 'package:circlo_app/router/route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -718,7 +720,10 @@ class _SettingsSheet extends StatelessWidget {
             icon: Icons.settings_outlined,
             label: 'Settings & Privacy',
             color: textColor,
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              Navigator.pop(context);
+              context.push(setting);
+            },
           ),
           _SheetTile(
             icon: Icons.bookmark_border_rounded,
