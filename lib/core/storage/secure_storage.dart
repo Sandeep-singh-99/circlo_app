@@ -14,4 +14,12 @@ class SecureStorageService {
   Future<void> deleteToken() async {
     await _storage.delete(key: "token");
   }
+
+  Future<void> saveTheme(String themeStr) async {
+    await _storage.write(key: "theme", value: themeStr);
+  }
+
+  Future<String?> getTheme() async {
+    return await _storage.read(key: "theme");
+  }
 }

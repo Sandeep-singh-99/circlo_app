@@ -3,6 +3,7 @@ import 'package:circlo_app/features/auth/bloc/auth_event.dart';
 import 'package:circlo_app/features/auth/bloc/auth_state.dart';
 import 'package:circlo_app/widgets/setting_section.dart';
 import 'package:circlo_app/widgets/setting_tile.dart';
+import 'package:circlo_app/widgets/setting_theme_toggle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -81,6 +82,7 @@ class SettingHome extends StatelessWidget {
           SettingSection(
             title: 'Preferences',
             tiles: [
+              const SettingThemeToggle(),
               SettingTile(
                 icon: Icons.notifications_none_rounded,
                 title: 'Notifications',

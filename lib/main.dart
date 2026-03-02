@@ -11,7 +11,9 @@ import 'package:circlo_app/features/like/bloc/like_bloc.dart';
 import 'package:circlo_app/features/like/repository/like_repository.dart';
 import 'package:circlo_app/features/post/bloc/post_bloc.dart';
 import 'package:circlo_app/features/post/repository/post_repository.dart';
+import 'package:circlo_app/features/theme/theme_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:circlo_app/config/theme.dart';
 import 'package:circlo_app/router/route.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +22,7 @@ void main() {
   runApp(
     MultiBlocProvider(
       providers: [
+        BlocProvider(create: (context) => ThemeCubit(SecureStorageService())),
         BlocProvider(
           create: (context) =>
               AuthBloc(AuthRepository(), SecureStorageService())
@@ -35,35 +38,62 @@ void main() {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the router EXACTLY ONCE.
+    // If it's initialized in build(), every theme change reconstructs the
+    // router instance, which resets the navigation stack to the home route.
+    _router = createRouter(context.read<AuthBloc>());
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      routerConfig: createRouter(context.read<AuthBloc>()),
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
-      builder: (context, child) {
-        return BlocListener<AuthBloc, AuthState>(
-          listener: (context, state) {
-            if (state is AuthFailure) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  behavior: SnackBarBehavior.floating,
-                  backgroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  margin: const EdgeInsets.all(16),
-                ),
-              );
-            }
+    return BlocBuilder<ThemeCubit, ThemeMode>(
+      builder: (context, themeMode) {
+        return MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          routerConfig: _router,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeMode,
+          builder: (context, child) {
+            return AnimatedTheme(
+              data: themeMode == ThemeMode.light
+                  ? AppTheme.lightTheme
+                  : AppTheme.darkTheme,
+              duration: const Duration(milliseconds: 20),
+              curve: Curves.easeInOut,
+              child: BlocListener<AuthBloc, AuthState>(
+                listener: (context, state) {
+                  if (state is AuthFailure) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: Colors.red,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        margin: const EdgeInsets.all(16),
+                      ),
+                    );
+                  }
+                },
+                child: child!,
+              ),
+            );
           },
-          child: child!,
         );
       },
     );
