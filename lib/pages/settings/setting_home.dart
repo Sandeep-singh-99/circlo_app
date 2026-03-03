@@ -7,6 +7,7 @@ import 'package:circlo_app/widgets/setting_theme_toggle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SettingHome extends StatelessWidget {
@@ -62,7 +63,9 @@ class SettingHome extends StatelessWidget {
                 icon: Icons.person_outline_rounded,
                 title: 'Edit Profile',
                 subtitle: 'Name, bio, avatar',
-                onTap: () {},
+                onTap: () {
+                  context.push("/edit-bio");
+                },
               ),
               SettingTile(
                 icon: Icons.lock_outline_rounded,
