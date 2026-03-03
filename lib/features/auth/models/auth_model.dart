@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:circlo_app/features/bio/models/bio_model.dart';
+
 final class AuthModel {
   final String? token;
   final String? id;
@@ -10,6 +12,7 @@ final class AuthModel {
   final File? image;
   final String? createdAt;
   final String? updatedAt;
+  final BioModel? bio;
 
   AuthModel({
     this.token,
@@ -21,6 +24,7 @@ final class AuthModel {
     this.image,
     this.createdAt,
     this.updatedAt,
+    this.bio,
   });
 
   factory AuthModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +38,9 @@ final class AuthModel {
       // 'image' is a local File for uploads only — never comes from JSON
       createdAt: json['createdAt'] as String?,
       updatedAt: json['updatedAt'] as String?,
+      bio: json['bio'] != null
+          ? BioModel.fromJson(json['bio'] as Map<String, dynamic>)
+          : null,
     );
   }
 }

@@ -15,6 +15,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ─────────────────────────────────────────────────────────────
 //  CONSTANTS
@@ -326,13 +327,85 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            '✨ Building dreams one post at a time  🚀',
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: textPrimary.withValues(alpha: 0.85),
+
+          // ── Bio text ──────────────────────────────────────
+          if (user.bio?.bio != null && user.bio!.bio!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                user.bio!.bio!,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: textPrimary.withValues(alpha: 0.85),
+                ),
+              ),
             ),
-          ),
+
+          // ── Location ──────────────────────────────────────
+          if (user.bio?.location != null && user.bio!.location!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    size: 14,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    user.bio!.location!,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: isDark ? Colors.grey[400]! : Colors.grey[600]!,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // ── Website ───────────────────────────────────────
+          if (user.bio?.website != null && user.bio!.website!.isNotEmpty)
+            GestureDetector(
+              onTap: () async {
+                final url = Uri.tryParse(user.bio!.website!);
+                if (url != null && await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    const Icon(Icons.link_rounded, size: 14, color: _kPurple),
+                    const SizedBox(width: 4),
+                    Text(
+                      user.bio!.website!,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: _kPurple,
+                        decoration: TextDecoration.underline,
+                        decorationColor: _kPurple,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // ── Fallback empty bio hint ────────────────────────
+          if (user.bio == null ||
+              (user.bio!.bio?.isEmpty ?? true) &&
+                  (user.bio!.location?.isEmpty ?? true) &&
+                  (user.bio!.website?.isEmpty ?? true))
+            Text(
+              'Add a bio to tell people about yourself',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: isDark ? Colors.grey[600]! : Colors.grey[500]!,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
 
           const SizedBox(height: 14),
 
@@ -343,7 +416,7 @@ class _ProfileHeader extends StatelessWidget {
                 child: _ProfileActionButton(
                   label: 'Edit Profile',
                   filled: false,
-                  onTap: () {},
+                  onTap: () => context.push(editBio),
                   isDark: isDark,
                 ),
               ),

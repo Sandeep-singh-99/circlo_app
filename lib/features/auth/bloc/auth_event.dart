@@ -4,6 +4,10 @@ abstract class AuthEvent {}
 
 class AuthCheckRequested extends AuthEvent {}
 
+/// Silently re-fetches the current user and emits [AuthAuthenticated]
+/// WITHOUT going through [AuthLoading], so the router never redirects to splash.
+class AuthRefreshUserRequested extends AuthEvent {}
+
 class AuthLoginRequested extends AuthEvent {
   final String email;
   final String password;
@@ -17,8 +21,12 @@ class AuthSignupRequested extends AuthEvent {
   final String password;
   final File? image;
 
-  AuthSignupRequested({required this.name, required this.email, required this.password, this.image});
+  AuthSignupRequested({
+    required this.name,
+    required this.email,
+    required this.password,
+    this.image,
+  });
 }
-
 
 class AuthLogoutRequested extends AuthEvent {}

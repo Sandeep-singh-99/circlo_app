@@ -3,6 +3,8 @@ import 'package:circlo_app/features/auth/bloc/auth_bloc.dart';
 import 'package:circlo_app/features/auth/bloc/auth_event.dart';
 import 'package:circlo_app/features/auth/bloc/auth_state.dart';
 import 'package:circlo_app/features/auth/repository/auth_repository.dart';
+import 'package:circlo_app/features/bio/bloc/bio_bloc.dart';
+import 'package:circlo_app/features/bio/repository/bio_repository.dart';
 import 'package:circlo_app/features/bookmark/bloc/bookmark_bloc.dart';
 import 'package:circlo_app/features/bookmark/repository/bookmark_repository.dart';
 import 'package:circlo_app/features/comment/bloc/comment_bloc.dart';
@@ -32,6 +34,7 @@ void main() {
         BlocProvider(create: (context) => BookmarkBloc(BookmarkRepository())),
         BlocProvider(create: (context) => LikeBloc(LikeRepository())),
         BlocProvider(create: (context) => CommentBloc(CommentRepository())),
+        BlocProvider(create: (context) => BioBloc(BioRepository())),
       ],
       child: const MyApp(),
     ),

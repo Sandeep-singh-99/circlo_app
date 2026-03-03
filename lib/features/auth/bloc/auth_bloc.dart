@@ -15,6 +15,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLoginRequested>(_onLogin);
     on<AuthLogoutRequested>(_onLogout);
     on<AuthSignupRequested>(_onSignup);
+    on<AuthRefreshUserRequested>(_onRefreshUser);
+  }
+
+  /// Silent refresh — does NOT emit [AuthLoading] so the router
+  /// never redirects to splash.
+  Future<void> _onRefreshUser(
+    AuthRefreshUserRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final user = await _authRepository.getMe();
+      emit(AuthAuthenticated(user));
+    } catch (_) {
+      // If refresh fails silently, just keep the current state
+    }
   }
 
   Future<void> _onCheck(
