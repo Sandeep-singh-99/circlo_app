@@ -15,9 +15,11 @@ final class PostModel {
   final List<PostHashtag> hashtags;
   final bool isLiked;
   final bool isBookmarked;
+  final bool isReposted;
   final int likesCount;
   final int commentsCount;
   final int bookmarksCount;
+  final int repostsCount;
 
   PostModel({
     this.id,
@@ -33,9 +35,11 @@ final class PostModel {
     this.hashtags = const [],
     this.isLiked = false,
     this.isBookmarked = false,
+    this.isReposted = false,
     this.likesCount = 0,
     this.commentsCount = 0,
     this.bookmarksCount = 0,
+    this.repostsCount = 0,
   });
 
   factory PostModel.fromJson(Map<String, dynamic> json) {
@@ -59,9 +63,21 @@ final class PostModel {
           : [],
       isLiked: json['isLiked'] as bool? ?? false,
       isBookmarked: json['isBookmarked'] as bool? ?? false,
+      isReposted: json['isReposted'] as bool? ?? false,
       likesCount: json['likesCount'] as int? ?? 0,
       commentsCount: json['commentsCount'] as int? ?? 0,
       bookmarksCount: json['bookmarksCount'] as int? ?? 0,
+      repostsCount: () {
+        // json['_count']?['rePosts'] is unreliable on dynamic in Dart
+        // Use explicit type check instead
+        final count = json['_count'];
+        if (count is Map) {
+          final v = count['rePosts'];
+          if (v is int) return v;
+        }
+        // Backend may also send repostsCount as a top-level field
+        return json['repostsCount'] as int? ?? 0;
+      }(),
     );
   }
 }

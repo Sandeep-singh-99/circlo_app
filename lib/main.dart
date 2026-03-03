@@ -13,6 +13,8 @@ import 'package:circlo_app/features/like/bloc/like_bloc.dart';
 import 'package:circlo_app/features/like/repository/like_repository.dart';
 import 'package:circlo_app/features/post/bloc/post_bloc.dart';
 import 'package:circlo_app/features/post/repository/post_repository.dart';
+import 'package:circlo_app/features/repost/bloc/repost_bloc.dart';
+import 'package:circlo_app/features/repost/repository/repost_repository.dart';
 import 'package:circlo_app/features/theme/theme_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -35,6 +37,7 @@ void main() {
         BlocProvider(create: (context) => LikeBloc(LikeRepository())),
         BlocProvider(create: (context) => CommentBloc(CommentRepository())),
         BlocProvider(create: (context) => BioBloc(BioRepository())),
+        BlocProvider(create: (context) => RepostBloc(RepostRepository())),
       ],
       child: const MyApp(),
     ),

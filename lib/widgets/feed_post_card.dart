@@ -28,6 +28,8 @@ class _FeedPostCardState extends State<FeedPostCard>
     with TickerProviderStateMixin {
   late bool _isLiked;
   late int _likeCount;
+  late bool _isReposted;
+  late int _repostsCount;
 
   late AnimationController _heartController;
   late Animation<double> _heartScale;
@@ -40,6 +42,8 @@ class _FeedPostCardState extends State<FeedPostCard>
     super.initState();
     _isLiked = widget.post.isLiked;
     _likeCount = widget.post.likesCount;
+    _isReposted = widget.post.isReposted;
+    _repostsCount = widget.post.repostsCount;
 
     _heartController = AnimationController(
       vsync: this,
@@ -229,8 +233,13 @@ class _FeedPostCardState extends State<FeedPostCard>
                   postId: widget.post.id!,
                   isLiked: _isLiked,
                   isBookmarked: widget.post.isBookmarked,
+                  isReposted: _isReposted,
+                  repostsCount: _repostsCount,
                   onToggleLike: _toggleLike,
                   heartScale: _heartScale,
+                  onRepostCountChanged: (count) {
+                    if (mounted) setState(() => _repostsCount = count);
+                  },
                 ),
 
               // ── Like count ──────────────────────────────────────────

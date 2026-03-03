@@ -6,6 +6,9 @@ import 'package:circlo_app/features/post/bloc/post_bloc.dart';
 import 'package:circlo_app/features/post/bloc/post_event.dart';
 import 'package:circlo_app/features/post/bloc/post_state.dart';
 import 'package:circlo_app/features/post/models/post_model.dart';
+import 'package:circlo_app/features/repost/bloc/repost_bloc.dart';
+import 'package:circlo_app/features/repost/bloc/repost_event.dart';
+import 'package:circlo_app/features/repost/bloc/repost_state.dart';
 import 'package:circlo_app/widgets/gradient_avatar_ring.dart';
 import 'package:circlo_app/widgets/profile_grid_post_card.dart';
 import 'package:circlo_app/widgets/profile_stat_column.dart';
@@ -39,7 +42,7 @@ class _ProfilePageState extends State<ProfilePage>
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 3, vsync: this);
+    _tab = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -107,6 +110,8 @@ class _ProfileContentState extends State<_ProfileContent> {
     super.initState();
     // Fetch the current user's own posts when the profile page loads
     context.read<PostBloc>().add(PostGetOwnRequested());
+    // Fetch reposts for the Reposts tab
+    context.read<RepostBloc>().add(GetRepostsRequested());
   }
 
   void _showSettingsSheet(BuildContext context, bool isDark) {
@@ -205,6 +210,7 @@ class _ProfileContentState extends State<_ProfileContent> {
                       Tab(
                         icon: Icon(Icons.person_pin_circle_outlined, size: 24),
                       ),
+                      Tab(icon: Icon(Icons.repeat_rounded, size: 24)),
                     ],
                   ),
                   color: bg,
@@ -237,6 +243,9 @@ class _ProfileContentState extends State<_ProfileContent> {
                   label: 'No tagged posts',
                   textSecondary: textSecondary,
                 ),
+
+                // ── Reposts tab ────────────────────────────────────
+                _RepostsTab(textSecondary: textSecondary),
               ],
             ),
           ),
@@ -669,12 +678,16 @@ class _PostsGrid extends StatelessWidget {
   final bool isLoading;
   final String? errorMessage;
   final Color textSecondary;
+  final IconData? emptyIcon;
+  final String? emptyLabel;
 
   const _PostsGrid({
     required this.posts,
     required this.isLoading,
     required this.textSecondary,
     this.errorMessage,
+    this.emptyIcon,
+    this.emptyLabel,
   });
 
   @override
@@ -712,9 +725,20 @@ class _PostsGrid extends StatelessWidget {
 
     if (posts.isEmpty) {
       return Center(
-        child: Text(
-          'No posts yet',
-          style: GoogleFonts.poppins(color: Colors.grey, fontSize: 14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              emptyIcon ?? Icons.grid_off_rounded,
+              size: 52,
+              color: Colors.grey[600],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              emptyLabel ?? 'No posts yet',
+              style: GoogleFonts.poppins(color: Colors.grey, fontSize: 14),
+            ),
+          ],
         ),
       );
     }
@@ -761,6 +785,87 @@ class _EmptyTabContent extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  REPOSTS TAB  (stateful so it can re-trigger fetch)
+// ─────────────────────────────────────────────────────────────
+class _RepostsTab extends StatefulWidget {
+  final Color textSecondary;
+  const _RepostsTab({required this.textSecondary});
+
+  @override
+  State<_RepostsTab> createState() => _RepostsTabState();
+}
+
+class _RepostsTabState extends State<_RepostsTab> {
+  List<PostModel> _lastPosts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Always refresh when the tab widget mounts
+    context.read<RepostBloc>().add(GetRepostsRequested());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<RepostBloc, RepostState>(
+      listener: (context, state) {
+        if (state is RepostsLoaded) {
+          // Cache last-known list so RepostToggled doesn't blank the tab
+          _lastPosts = state.posts;
+        }
+      },
+      builder: (context, state) {
+        if (state is RepostLoading || state is RepostInitial) {
+          return const Center(
+            child: CircularProgressIndicator(color: _kPurple),
+          );
+        }
+        if (state is RepostError) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: Colors.redAccent,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  state.message,
+                  style: GoogleFonts.poppins(
+                    color: widget.textSecondary,
+                    fontSize: 13,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () =>
+                      context.read<RepostBloc>().add(GetRepostsRequested()),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+        // Use freshly loaded list; fall back to cached _lastPosts
+        // when state is RepostToggled (toggle on feed) to avoid blank tab
+        final posts = state is RepostsLoaded ? state.posts : _lastPosts;
+        return _PostsGrid(
+          posts: posts,
+          isLoading: false,
+          errorMessage: null,
+          textSecondary: widget.textSecondary,
+          emptyIcon: Icons.repeat_rounded,
+          emptyLabel: 'No reposts yet',
+        );
+      },
     );
   }
 }
