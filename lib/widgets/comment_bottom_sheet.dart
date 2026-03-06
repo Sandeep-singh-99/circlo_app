@@ -12,7 +12,6 @@ import 'package:circlo_app/widgets/comment_input_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CommentBottomSheet extends StatefulWidget {
@@ -28,6 +27,7 @@ class CommentBottomSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      useSafeArea: true,
       builder: (_) => CommentBottomSheet(postId: postId),
     );
   }
@@ -60,7 +60,9 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
       _editingCommentId = null;
     });
     _controller.clear();
-    _focusNode.requestFocus();
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _focusNode.requestFocus();
+    });
   }
 
   void _cancelReply() {
@@ -72,6 +74,18 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
     _focusNode.unfocus();
   }
 
+  void _startEdit(CommentModel comment) {
+    setState(() {
+      _editingCommentId = comment.id;
+      _replyingToCommentId = null;
+      _replyingToName = null;
+    });
+    _controller.text = comment.content;
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _focusNode.requestFocus();
+    });
+  }
+
   void _submitComment() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
@@ -80,11 +94,6 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
       context.read<CommentBloc>().add(
         CommentUpdateRequested(id: _editingCommentId!, content: text),
       );
-      setState(() {
-        _editingCommentId = null;
-        _replyingToCommentId = null;
-        _replyingToName = null;
-      });
     } else {
       context.read<CommentBloc>().add(
         CommentAddRequested(
@@ -93,11 +102,13 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
           parentId: _replyingToCommentId,
         ),
       );
-      setState(() {
-        _replyingToCommentId = null;
-        _replyingToName = null;
-      });
     }
+
+    setState(() {
+      _editingCommentId = null;
+      _replyingToCommentId = null;
+      _replyingToName = null;
+    });
     _controller.clear();
     _focusNode.unfocus();
   }
@@ -106,97 +117,109 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF1C1C1E) : Colors.white;
-    final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textSecondary = isDark ? Colors.grey[400]! : Colors.grey[600]!;
+    final divider = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA);
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      margin: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+      height: MediaQuery.of(context).size.height * 0.88,
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
       ),
       child: Column(
         children: [
-          // Drag Handle
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[600],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          Text(
-            'Comments',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: textPrimary,
-            ),
-          ),
-          Divider(color: Colors.grey.withOpacity(0.2)),
+          // ── Header ────────────────────────────────────────────────────
+          _SheetHandle(isDark: isDark),
+          _SheetHeader(isDark: isDark, divider: divider),
 
-          // Comments List
+          // ── Comments list ─────────────────────────────────────────────
           Expanded(
             child: BlocBuilder<CommentBloc, CommentState>(
               builder: (context, state) {
                 if (state is CommentLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (state is CommentError) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF0095F6),
+                    ),
+                  );
+                }
+
+                if (state is CommentError) {
                   return Center(
                     child: Text(
                       'Failed to load comments',
-                      style: TextStyle(color: textSecondary),
+                      style: GoogleFonts.inter(
+                        color: isDark ? Colors.grey[500] : Colors.grey[500],
+                        fontSize: 14,
+                      ),
                     ),
                   );
-                } else if (state is CommentLoaded) {
-                  final comments = state.comments;
-                  if (comments.isEmpty) {
+                }
+
+                if (state is CommentLoaded) {
+                  if (state.comments.isEmpty) {
                     return Center(
-                      child: Text(
-                        'No comments yet. Be the first!',
-                        style: GoogleFonts.poppins(color: textSecondary),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'No comments yet.',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Start the conversation.',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: isDark
+                                  ? Colors.grey[500]
+                                  : Colors.grey[500],
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   }
 
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    itemCount: comments.length,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: state.comments.length,
                     itemBuilder: (context, index) {
-                      return _CommentTile(
-                        comment: comments[index],
+                      final comment = state.comments[index];
+                      final authState = context.read<AuthBloc>().state;
+                      final me = authState is AuthAuthenticated
+                          ? authState.user.id
+                          : null;
+                      final isOwner = me != null && comment.userId == me;
+
+                      return _IGCommentTile(
+                        comment: comment,
                         postId: widget.postId,
                         isDark: isDark,
-                        textPrimary: textPrimary,
-                        textSecondary: textSecondary,
+                        isOwner: isOwner,
                         onReply: _startReply,
-                        onEdit: (comment) {
-                          setState(() {
-                            _editingCommentId = comment.id;
-                            _replyingToCommentId = null;
-                            _replyingToName = null;
-                          });
-                          _controller.text = comment.content;
-                          _focusNode.requestFocus();
-                        },
+                        onEdit: _startEdit,
+                        onDelete: (id) => context.read<CommentBloc>().add(
+                          CommentDeleteRequested(id: id),
+                        ),
+                        onLike: (id) => context.read<CommentBloc>().add(
+                          CommentLikeToggleRequested(commentId: id),
+                        ),
                       );
                     },
                   );
                 }
+
                 return const SizedBox.shrink();
               },
             ),
           ),
 
-          // Input Field
+          // ── Input ─────────────────────────────────────────────────────
           CommentInputField(
             controller: _controller,
             focusNode: _focusNode,
@@ -211,225 +234,369 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// CommentTile — a single comment row with likes, replies, and edit/delete
+// Small composable header widgets
 // ──────────────────────────────────────────────────────────────────────────────
-class _CommentTile extends StatefulWidget {
+
+class _SheetHandle extends StatelessWidget {
+  final bool isDark;
+  const _SheetHandle({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.only(top: 10, bottom: 6),
+        width: 36,
+        height: 4,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF48484A) : const Color(0xFFC7C7CC),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetHeader extends StatelessWidget {
+  final bool isDark;
+  final Color divider;
+  const _SheetHeader({required this.isDark, required this.divider});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            'Comments',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+        ),
+        Divider(height: 1, thickness: 0.5, color: divider),
+      ],
+    );
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Instagram-style comment tile
+// ──────────────────────────────────────────────────────────────────────────────
+
+class _IGCommentTile extends StatefulWidget {
   final CommentModel comment;
   final String postId;
   final bool isDark;
-  final Color textPrimary;
-  final Color textSecondary;
+  final bool isOwner;
   final void Function(CommentModel) onReply;
   final void Function(CommentModel) onEdit;
+  final void Function(String) onDelete;
+  final void Function(String) onLike;
 
-  const _CommentTile({
+  const _IGCommentTile({
     required this.comment,
     required this.postId,
     required this.isDark,
-    required this.textPrimary,
-    required this.textSecondary,
+    required this.isOwner,
     required this.onReply,
     required this.onEdit,
+    required this.onDelete,
+    required this.onLike,
   });
 
   @override
-  State<_CommentTile> createState() => _CommentTileState();
+  State<_IGCommentTile> createState() => _IGCommentTileState();
 }
 
-class _CommentTileState extends State<_CommentTile> {
+class _IGCommentTileState extends State<_IGCommentTile> {
   bool _showReplies = false;
 
   @override
   Widget build(BuildContext context) {
-    final comment = widget.comment;
-    final author = comment.user;
-    final hasAvatar =
-        author?.imageUrl != null && (author?.imageUrl ?? '').isNotEmpty;
-    final authorName = author?.name ?? 'Unknown';
-
-    final authState = context.read<AuthBloc>().state;
-    final currentUserId = authState is AuthAuthenticated
-        ? authState.user.id
-        : null;
-    final isOwner = currentUserId != null && comment.userId == currentUserId;
+    final c = widget.comment;
+    final author = c.user;
+    final name = author?.name ?? 'Unknown';
+    final imgUrl = author?.imageUrl;
+    final hasImg = imgUrl != null && imgUrl.isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Comment row ──────────────────────────────────────────────────
-          Slidable(
-            key: ValueKey(comment.id),
-            enabled: isOwner,
-            endActionPane: ActionPane(
-              motion: const ScrollMotion(),
-              extentRatio: 0.45,
-              children: [
-                SlidableAction(
-                  onPressed: (_) => widget.onEdit(comment),
-                  backgroundColor: Colors.blueGrey.shade700,
-                  foregroundColor: Colors.white,
-                  icon: Icons.edit_rounded,
-                  label: 'Edit',
+          // ── Main comment row ──────────────────────────────────────
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Avatar
+              GestureDetector(
+                onTap: widget.isOwner ? () => _showOptions(context) : null,
+                child: _Avatar(
+                  name: name,
+                  imgUrl: imgUrl,
+                  hasImg: hasImg,
+                  radius: 16,
                 ),
-                SlidableAction(
-                  onPressed: (_) {
-                    context.read<CommentBloc>().add(
-                      CommentDeleteRequested(id: comment.id),
-                    );
-                  },
-                  backgroundColor: Colors.redAccent,
-                  foregroundColor: Colors.white,
-                  icon: Icons.delete_outline_rounded,
-                  label: 'Delete',
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    bottomLeft: Radius.circular(8),
-                  ),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Avatar
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: Colors.grey[800],
-                    backgroundImage: hasAvatar
-                        ? NetworkImage(author!.imageUrl ?? '')
-                        : null,
-                    child: !hasAvatar
-                        ? Text(
-                            authorName.isNotEmpty
-                                ? authorName[0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 12),
+              ),
+              const SizedBox(width: 12),
 
-                  // Content + actions
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              // Content column
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Username + comment on same line (Instagram style)
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '$name ',
+                            style: GoogleFonts.inter(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              color: widget.isDark
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
+                          ),
+                          TextSpan(
+                            text: c.content,
+                            style: GoogleFonts.inter(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w400,
+                              color: widget.isDark
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+
+                    // time · like count? · Reply · (owner: Edit · Delete)
+                    Row(
                       children: [
-                        // Name + time
-                        Row(
-                          children: [
-                            Text(
-                              authorName,
-                              style: GoogleFonts.poppins(
+                        Text(
+                          _timeAgo(c.createdAt),
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: widget.isDark
+                                ? Colors.grey[500]
+                                : Colors.grey[500],
+                          ),
+                        ),
+                        if (c.likeCount > 0) ...[
+                          const SizedBox(width: 12),
+                          Text(
+                            '${c.likeCount} ${c.likeCount == 1 ? 'like' : 'likes'}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: widget.isDark
+                                  ? Colors.grey[500]
+                                  : Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(width: 12),
+                        _InlineBtn(
+                          label: 'Reply',
+                          isDark: widget.isDark,
+                          onTap: () => widget.onReply(c),
+                        ),
+                        if (widget.isOwner) ...[
+                          const SizedBox(width: 12),
+                          _InlineBtn(
+                            label: 'Edit',
+                            isDark: widget.isDark,
+                            onTap: () => widget.onEdit(c),
+                          ),
+                          const SizedBox(width: 12),
+                          GestureDetector(
+                            onTap: () => _confirmDelete(context),
+                            child: Text(
+                              'Delete',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                                color: widget.textPrimary,
+                                color: Colors.redAccent,
                               ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+
+                    // "View X replies" button
+                    if (c.replyCount > 0) ...[
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () =>
+                            setState(() => _showReplies = !_showReplies),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 1,
+                              color: widget.isDark
+                                  ? Colors.grey[600]
+                                  : Colors.grey[400],
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              _timeAgo(comment.createdAt),
-                              style: GoogleFonts.poppins(
-                                fontSize: 11,
-                                color: widget.textSecondary,
+                              _showReplies
+                                  ? 'Hide replies'
+                                  : 'View ${c.replyCount} ${c.replyCount == 1 ? 'reply' : 'replies'}',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: widget.isDark
+                                    ? Colors.grey[500]
+                                    : Colors.grey[600],
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 2),
+                      ),
+                    ],
 
-                        // Comment text
-                        Text(
-                          comment.content,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: widget.textPrimary,
-                          ),
+                    // Inline replies
+                    if (_showReplies)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: _IGRepliesSection(
+                          commentId: c.id,
+                          isDark: widget.isDark,
                         ),
-                        const SizedBox(height: 6),
+                      ),
+                  ],
+                ),
+              ),
 
-                        // Action row: Like · Reply
-                        Row(
-                          children: [
-                            // Like button
-                            _LikeButton(
-                              comment: comment,
-                              isDark: widget.isDark,
-                            ),
-                            const SizedBox(width: 16),
+              // Like button — far right
+              const SizedBox(width: 8),
+              _HeartBtn(
+                liked: c.isLikedByCurrentUser,
+                isDark: widget.isDark,
+                onTap: () => widget.onLike(c.id),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-                            // Reply button
-                            GestureDetector(
-                              onTap: () => widget.onReply(comment),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.reply_rounded,
-                                    size: 14,
-                                    color: widget.textSecondary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Reply',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      color: widget.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+  void _showOptions(BuildContext context) {
+    final isDark = widget.isDark;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF48484A)
+                    : const Color(0xFFC7C7CC),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.edit_outlined,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+              title: Text(
+                'Edit',
+                style: GoogleFonts.inter(
+                  color: isDark ? Colors.white : Colors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                widget.onEdit(widget.comment);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.delete_outline,
+                color: Colors.redAccent,
+              ),
+              title: Text(
+                'Delete',
+                style: GoogleFonts.inter(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                widget.onDelete(widget.comment.id);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
 
-                            // View replies chip
-                            if (comment.replyCount > 0) ...[
-                              const SizedBox(width: 16),
-                              GestureDetector(
-                                onTap: () => setState(
-                                  () => _showReplies = !_showReplies,
-                                ),
-                                child: Text(
-                                  _showReplies
-                                      ? 'Hide replies'
-                                      : '${comment.replyCount} ${comment.replyCount == 1 ? 'reply' : 'replies'}',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    color: const Color(0xFF6C63FF),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+  void _confirmDelete(BuildContext context) {
+    final isDark = widget.isDark;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: Text(
+          'Delete comment?',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : Colors.black,
+          ),
+        ),
+        content: Text(
+          'This cannot be undone.',
+          style: GoogleFonts.inter(
+            color: isDark ? Colors.grey[400] : Colors.grey[600],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: const Color(0xFF0095F6)),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              widget.onDelete(widget.comment.id);
+            },
+            child: Text(
+              'Delete',
+              style: GoogleFonts.inter(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
-
-          // ── Inline replies ────────────────────────────────────────────────
-          if (_showReplies)
-            Padding(
-              padding: const EdgeInsets.only(left: 44),
-              child: _RepliesSection(
-                commentId: comment.id,
-                postId: widget.postId,
-                isDark: widget.isDark,
-                textPrimary: widget.textPrimary,
-                textSecondary: widget.textSecondary,
-              ),
-            ),
-
-          const SizedBox(height: 12),
         ],
       ),
     );
@@ -440,9 +607,9 @@ class _CommentTileState extends State<_CommentTile> {
     try {
       final dt = DateTime.parse(iso).toLocal();
       final diff = DateTime.now().difference(dt);
-      if (diff.inMinutes < 1) return 'now';
-      if (diff.inHours < 1) return '${diff.inMinutes}m';
-      if (diff.inDays < 1) return '${diff.inHours}h';
+      if (diff.inSeconds < 60) return '${diff.inSeconds}s';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+      if (diff.inHours < 24) return '${diff.inHours}h';
       if (diff.inDays < 7) return '${diff.inDays}d';
       return '${dt.day}/${dt.month}/${dt.year}';
     } catch (_) {
@@ -452,77 +619,14 @@ class _CommentTileState extends State<_CommentTile> {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Like button with optimistic animation
+// Replies section
 // ──────────────────────────────────────────────────────────────────────────────
-class _LikeButton extends StatelessWidget {
-  final CommentModel comment;
-  final bool isDark;
 
-  const _LikeButton({required this.comment, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final liked = comment.isLikedByCurrentUser;
-    final count = comment.likeCount;
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        HapticFeedback.lightImpact();
-        context.read<CommentBloc>().add(
-          CommentLikeToggleRequested(commentId: comment.id),
-        );
-      },
-      child: Row(
-        children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            transitionBuilder: (child, animation) =>
-                ScaleTransition(scale: animation, child: child),
-            child: Icon(
-              liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-              key: ValueKey(liked),
-              size: 16,
-              color: liked
-                  ? Colors.redAccent
-                  : (isDark ? Colors.grey[400] : Colors.grey[600]),
-            ),
-          ),
-          if (count > 0) ...[
-            const SizedBox(width: 4),
-            Text(
-              '$count',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: liked
-                    ? Colors.redAccent
-                    : (isDark ? Colors.grey[400] : Colors.grey[600]),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Replies section — shown inline below a comment
-// ──────────────────────────────────────────────────────────────────────────────
-class _RepliesSection extends StatelessWidget {
+class _IGRepliesSection extends StatelessWidget {
   final String commentId;
-  final String postId;
   final bool isDark;
-  final Color textPrimary;
-  final Color textSecondary;
 
-  const _RepliesSection({
-    required this.commentId,
-    required this.postId,
-    required this.isDark,
-    required this.textPrimary,
-    required this.textSecondary,
-  });
+  const _IGRepliesSection({required this.commentId, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -534,13 +638,13 @@ class _RepliesSection extends StatelessWidget {
         builder: (context, state) {
           if (state is ReplyLoading) {
             return Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.symmetric(vertical: 4),
               child: SizedBox(
-                height: 20,
-                width: 20,
+                height: 16,
+                width: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  color: isDark ? Colors.grey[500] : Colors.grey[600],
                 ),
               ),
             );
@@ -548,102 +652,104 @@ class _RepliesSection extends StatelessWidget {
 
           if (state is ReplyError) {
             return Text(
-              'Failed to load replies',
-              style: GoogleFonts.poppins(fontSize: 12, color: Colors.redAccent),
+              'Could not load replies',
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.redAccent),
             );
           }
 
           if (state is ReplyLoaded) {
             if (state.replies.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text(
-                  'No replies yet',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: textSecondary,
-                  ),
+              return Text(
+                'No replies yet',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: isDark ? Colors.grey[500] : Colors.grey[600],
                 ),
               );
             }
 
             return Column(
-              children: state.replies.map((reply) {
-                final author = reply.user;
-                final hasAvatar =
-                    author?.imageUrl != null &&
-                    (author?.imageUrl ?? '').isNotEmpty;
-                final authorName = author?.name ?? 'Unknown';
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleAvatar(
-                        radius: 13,
-                        backgroundColor: Colors.grey[800],
-                        backgroundImage: hasAvatar
-                            ? NetworkImage(author!.imageUrl ?? '')
-                            : null,
-                        child: !hasAvatar
-                            ? Text(
-                                authorName.isNotEmpty
-                                    ? authorName[0].toUpperCase()
-                                    : '?',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  authorName,
-                                  style: GoogleFonts.poppins(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                    color: textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _timeAgo(reply.createdAt),
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 10,
-                                    color: textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              reply.content,
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                color: textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+              children: state.replies
+                  .map((r) => _IGReplyTile(reply: r, isDark: isDark))
+                  .toList(),
             );
           }
 
           return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Single reply tile (same style as comment, slightly smaller)
+// ──────────────────────────────────────────────────────────────────────────────
+
+class _IGReplyTile extends StatelessWidget {
+  final CommentModel reply;
+  final bool isDark;
+
+  const _IGReplyTile({required this.reply, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final author = reply.user;
+    final name = author?.name ?? 'Unknown';
+    final imgUrl = author?.imageUrl;
+    final hasImg = imgUrl != null && imgUrl.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Avatar(name: name, imgUrl: imgUrl, hasImg: hasImg, radius: 13),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '$name ',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      TextSpan(
+                        text: reply.content,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _timeAgo(reply.createdAt),
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: isDark ? Colors.grey[500] : Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          _HeartBtn(
+            liked: reply.isLikedByCurrentUser,
+            isDark: isDark,
+            onTap: () {},
+          ),
+        ],
       ),
     );
   }
@@ -653,13 +759,118 @@ class _RepliesSection extends StatelessWidget {
     try {
       final dt = DateTime.parse(iso).toLocal();
       final diff = DateTime.now().difference(dt);
-      if (diff.inMinutes < 1) return 'now';
-      if (diff.inHours < 1) return '${diff.inMinutes}m';
-      if (diff.inDays < 1) return '${diff.inHours}h';
+      if (diff.inSeconds < 60) return '${diff.inSeconds}s';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+      if (diff.inHours < 24) return '${diff.inHours}h';
       if (diff.inDays < 7) return '${diff.inDays}d';
       return '${dt.day}/${dt.month}/${dt.year}';
     } catch (_) {
       return '';
     }
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Reusable micro-widgets
+// ──────────────────────────────────────────────────────────────────────────────
+
+class _Avatar extends StatelessWidget {
+  final String name;
+  final String? imgUrl;
+  final bool hasImg;
+  final double radius;
+
+  const _Avatar({
+    required this.name,
+    required this.imgUrl,
+    required this.hasImg,
+    required this.radius,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: const Color(0xFF3A3A3C),
+      backgroundImage: hasImg ? NetworkImage(imgUrl!) : null,
+      child: !hasImg
+          ? Text(
+              name.isNotEmpty ? name[0].toUpperCase() : '?',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: radius * 0.75,
+                fontWeight: FontWeight.w600,
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+class _HeartBtn extends StatelessWidget {
+  final bool liked;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _HeartBtn({
+    required this.liked,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          transitionBuilder: (child, animation) => ScaleTransition(
+            scale: Tween<double>(begin: 0.6, end: 1.0).animate(animation),
+            child: child,
+          ),
+          child: Icon(
+            liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+            key: ValueKey(liked),
+            size: 15,
+            color: liked
+                ? Colors.redAccent
+                : (isDark ? Colors.grey[500] : Colors.grey[500]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InlineBtn extends StatelessWidget {
+  final String label;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _InlineBtn({
+    required this.label,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: isDark ? Colors.grey[500] : Colors.grey[600],
+        ),
+      ),
+    );
   }
 }

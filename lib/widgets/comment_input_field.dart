@@ -4,15 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 class CommentInputField extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSubmit;
+  final FocusNode? focusNode;
 
-  /// When non-null, displays a "Replying to @name" chip above the input
+  /// When non-null, prefills "@name " to show reply context
   final String? replyingToName;
 
-  /// Called when the user taps the ✕ on the reply banner to cancel the reply
+  /// Called when the user taps the ✕ to cancel a reply
   final VoidCallback? onCancelReply;
-
-  /// Optional focus node; when provided, the internal TextField uses it
-  final FocusNode? focusNode;
 
   const CommentInputField({
     super.key,
@@ -28,48 +26,51 @@ class CommentInputField extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF1C1C1E) : Colors.white;
     final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textSecondary = isDark ? Colors.grey[400]! : Colors.grey[600]!;
+    final textSecondary = isDark ? Colors.grey[500]! : Colors.grey[500]!;
+    final fieldBg = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF0F0F0);
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
       decoration: BoxDecoration(
         color: bg,
         border: Border(
-          top: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
+          top: BorderSide(
+            color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0),
+          ),
         ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // "Replying to @name" banner
+          // "Replying to @name" bar
           if (replyingToName != null)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              color: isDark ? const Color(0xFF2A2A2E) : const Color(0xFFF0F0F0),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+              color: isDark ? const Color(0xFF252528) : const Color(0xFFF7F7F7),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.reply_rounded,
-                    size: 14,
-                    color: const Color(0xFF6C63FF),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Replying to @$replyingToName',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: const Color(0xFF6C63FF),
-                        fontWeight: FontWeight.w500,
-                      ),
+                  Text(
+                    'Replying to ',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: textSecondary,
                     ),
                   ),
+                  Text(
+                    replyingToName!,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: textSecondary,
+                    ),
+                  ),
+                  const Spacer(),
                   GestureDetector(
                     onTap: onCancelReply,
                     child: Icon(
                       Icons.close_rounded,
-                      size: 16,
+                      size: 15,
                       color: textSecondary,
                     ),
                   ),
@@ -78,55 +79,81 @@ class CommentInputField extends StatelessWidget {
             ),
 
           // Input row
-          Padding(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 10,
-              bottom: bottomPadding > 0 ? bottomPadding + 10 : 20,
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: Colors.grey[800],
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    style: GoogleFonts.poppins(
-                      color: textPrimary,
-                      fontSize: 14,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: replyingToName != null
-                          ? 'Add a reply...'
-                          : 'Add a comment...',
-                      hintStyle: GoogleFonts.poppins(color: textSecondary),
-                      border: InputBorder.none,
-                      isDense: true,
-                    ),
-                    maxLines: null,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: onSubmit,
-                  child: Text(
-                    'Post',
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFF6C63FF),
-                      fontWeight: FontWeight.w600,
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 12,
+                right: 12,
+                top: 8,
+                bottom: bottomPadding > 0 ? 8 : 8,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: isDark
+                        ? const Color(0xFF3A3A3C)
+                        : const Color(0xFFD1D1D6),
+                    child: Icon(
+                      Icons.person,
+                      color: isDark
+                          ? const Color(0xFF8E8E93)
+                          : const Color(0xFF8E8E93),
+                      size: 18,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: fieldBg,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: TextField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        style: GoogleFonts.inter(
+                          color: textPrimary,
+                          fontSize: 14,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: replyingToName != null
+                              ? 'Add a reply...'
+                              : 'Add a comment...',
+                          hintStyle: GoogleFonts.inter(
+                            color: textSecondary,
+                            fontSize: 14,
+                          ),
+                          isDense: true,
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        maxLines: 4,
+                        minLines: 1,
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: onSubmit,
+                    child: Text(
+                      'Post',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF0095F6),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
