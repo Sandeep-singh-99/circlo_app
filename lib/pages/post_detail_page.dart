@@ -185,7 +185,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          FeedPostCard(post: post),
+          FeedPostCard(post: post, isDetail: true),
 
           Divider(height: 1, thickness: 0.5, color: divider),
 
@@ -680,7 +680,7 @@ class _IGDetailReplies extends StatelessWidget {
                       CircleAvatar(
                         radius: 13,
                         backgroundColor: const Color(0xFF3A3A3C),
-                        backgroundImage: hasImg ? NetworkImage(imgUrl!) : null,
+                        backgroundImage: hasImg ? NetworkImage(imgUrl) : null,
                         child: !hasImg
                             ? Text(
                                 name.isNotEmpty ? name[0].toUpperCase() : '?',

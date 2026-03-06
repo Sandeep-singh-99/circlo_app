@@ -17,8 +17,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 class FeedPostCard extends StatefulWidget {
   final PostModel post;
+  final bool isDetail;
 
-  const FeedPostCard({super.key, required this.post});
+  const FeedPostCard({super.key, required this.post, this.isDetail = false});
 
   @override
   State<FeedPostCard> createState() => _FeedPostCardState();
@@ -87,6 +88,8 @@ class _FeedPostCardState extends State<FeedPostCard>
   }
 
   void _navigateToDetail() {
+    if (widget.isDetail) return;
+
     final id = widget.post.id;
     if (id != null && id.isNotEmpty) {
       context.push('$postDetail/$id');
