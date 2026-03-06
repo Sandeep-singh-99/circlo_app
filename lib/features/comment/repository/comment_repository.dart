@@ -6,11 +6,15 @@ import 'package:dio/dio.dart';
 class CommentRepository {
   final Dio _dio = DioClient().dio;
 
-  Future<CommentModel> addComment(String postId, String content) async {
+  Future<CommentModel> addComment(
+    String postId,
+    String content, {
+    String? parentId,
+  }) async {
     try {
       final response = await _dio.post(
         '/api/comment/$postId',
-        data: {'content': content},
+        data: {'content': content, if (parentId != null) 'parentId': parentId},
       );
       return CommentModel.fromJson(
         response.data['comment'] as Map<String, dynamic>,
@@ -47,8 +51,27 @@ class CommentRepository {
         data: {'content': content},
       );
       return CommentModel.fromJson(
-        response.data['updatedComment'] as Map<String, dynamic>,
+        response.data['comment'] as Map<String, dynamic>,
       );
+    } on DioException catch (e) {
+      throw handleDioError(e, caller: 'CommentRepository');
+    }
+  }
+
+  Future<List<CommentModel>> getReplies(String commentId) async {
+    try {
+      final response = await _dio.get('/api/comment/reply/$commentId');
+      return (response.data as List)
+          .map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw handleDioError(e, caller: 'CommentRepository');
+    }
+  }
+
+  Future<void> toggleCommentLike(String commentId) async {
+    try {
+      await _dio.post('/api/comment/comment-like/$commentId');
     } on DioException catch (e) {
       throw handleDioError(e, caller: 'CommentRepository');
     }

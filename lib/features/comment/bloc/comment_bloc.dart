@@ -12,6 +12,7 @@ class CommentBloc extends Bloc<CommentEvent, CommentState> {
     on<CommentDeleteRequested>(_onCommentDeleteRequested);
     on<CommentGetRequested>(_onCommentGetRequested);
     on<CommentUpdateRequested>(_onCommentUpdateRequested);
+    on<CommentLikeToggleRequested>(_onCommentLikeToggleRequested);
   }
 
   Future<void> _onCommentAddRequested(
@@ -29,8 +30,9 @@ class CommentBloc extends Bloc<CommentEvent, CommentState> {
       final response = await _commentRepository.addComment(
         event.postId,
         event.content,
+        parentId: event.parentId,
       );
-      // New comment appears at the top
+      // New comment appears at the top (only top-level; replies handled by ReplyBloc)
       emit(CommentLoaded(comments: [response, ...currentComments]));
     } catch (e) {
       emit(CommentError(message: e.toString()));
@@ -53,7 +55,6 @@ class CommentBloc extends Bloc<CommentEvent, CommentState> {
           .toList();
       emit(CommentLoaded(comments: updatedComments));
     } catch (e) {
-      // Need a way to recover comments if delete fails, but throwing Error is okay for now
       emit(CommentError(message: e.toString()));
     }
   }
@@ -91,6 +92,34 @@ class CommentBloc extends Bloc<CommentEvent, CommentState> {
       emit(CommentLoaded(comments: updatedComments));
     } catch (e) {
       emit(CommentError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onCommentLikeToggleRequested(
+    CommentLikeToggleRequested event,
+    Emitter<CommentState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! CommentLoaded) return;
+
+    // Optimistic update
+    final optimisticComments = currentState.comments.map((c) {
+      if (c.id == event.commentId) {
+        final liked = !c.isLikedByCurrentUser;
+        return c.copyWith(
+          isLikedByCurrentUser: liked,
+          likeCount: liked ? c.likeCount + 1 : c.likeCount - 1,
+        );
+      }
+      return c;
+    }).toList();
+    emit(CommentLoaded(comments: optimisticComments));
+
+    try {
+      await _commentRepository.toggleCommentLike(event.commentId);
+    } catch (e) {
+      // Revert on failure
+      emit(CommentLoaded(comments: currentState.comments));
     }
   }
 }
