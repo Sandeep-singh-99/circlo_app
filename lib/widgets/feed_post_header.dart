@@ -2,8 +2,10 @@ import 'package:circlo_app/features/auth/bloc/auth_bloc.dart';
 import 'package:circlo_app/features/auth/bloc/auth_state.dart';
 import 'package:circlo_app/features/post/models/post_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:circlo_app/core/utils/app_toast.dart';
 import 'package:circlo_app/features/follow/bloc/follow_bloc.dart';
 import 'package:circlo_app/features/follow/bloc/follow_event.dart';
 import 'package:circlo_app/features/follow/bloc/follow_state.dart';
@@ -88,8 +90,15 @@ class FeedPostHeader extends StatelessWidget {
                   children: [
                     GestureDetector(
                       onTap: () {
+                        HapticFeedback.lightImpact();
                         context.read<FollowBloc>().add(
                           ToggleFollowRequested(post.user!.id!),
+                        );
+                        AppToast.show(
+                          context,
+                          message: isFollowing
+                              ? 'Unfollowed ${post.user!.name}'
+                              : 'Following ${post.user!.name}',
                         );
                       },
                       child: AnimatedContainer(

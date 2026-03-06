@@ -5,8 +5,10 @@ import 'package:circlo_app/features/follow/bloc/follow_event.dart';
 import 'package:circlo_app/features/follow/bloc/follow_state.dart';
 import 'package:circlo_app/features/follow/model/follow_user_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:circlo_app/core/utils/app_toast.dart';
 
 enum FollowListType { followers, following }
 
@@ -201,7 +203,14 @@ class _UserListTile extends StatelessWidget {
           if (!isMe)
             GestureDetector(
               onTap: () {
+                HapticFeedback.lightImpact();
                 context.read<FollowBloc>().add(ToggleFollowRequested(user.id));
+                AppToast.show(
+                  context,
+                  message: isFollowing
+                      ? 'Unfollowed ${user.name}'
+                      : 'Following ${user.name}',
+                );
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
