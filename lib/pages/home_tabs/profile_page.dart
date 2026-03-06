@@ -9,6 +9,10 @@ import 'package:circlo_app/features/post/models/post_model.dart';
 import 'package:circlo_app/features/repost/bloc/repost_bloc.dart';
 import 'package:circlo_app/features/repost/bloc/repost_event.dart';
 import 'package:circlo_app/features/repost/bloc/repost_state.dart';
+import 'package:circlo_app/features/follow/bloc/follow_bloc.dart';
+import 'package:circlo_app/features/follow/bloc/follow_event.dart';
+import 'package:circlo_app/features/follow/bloc/follow_state.dart';
+import 'package:circlo_app/widgets/follow_list_bottom_sheet.dart';
 import 'package:circlo_app/widgets/gradient_avatar_ring.dart';
 import 'package:circlo_app/widgets/profile_grid_post_card.dart';
 import 'package:circlo_app/widgets/profile_stat_column.dart';
@@ -112,6 +116,13 @@ class _ProfileContentState extends State<_ProfileContent> {
     context.read<PostBloc>().add(PostGetOwnRequested());
     // Fetch reposts for the Reposts tab
     context.read<RepostBloc>().add(GetRepostsRequested());
+
+    // Fetch followers & following
+    final userId = widget.user.id;
+    if (userId != null) {
+      context.read<FollowBloc>().add(GetFollowersRequested(userId));
+      context.read<FollowBloc>().add(GetFollowingRequested(userId));
+    }
   }
 
   void _showSettingsSheet(BuildContext context, bool isDark) {
@@ -132,123 +143,156 @@ class _ProfileContentState extends State<_ProfileContent> {
     final textPrimary = isDark ? Colors.white : Colors.black87;
     final textSecondary = isDark ? Colors.grey[400]! : Colors.grey[600]!;
 
-    // Derive follower/following stats from user id hash (kept as before)
-    final seed = widget.user.id?.hashCode.abs() ?? 42;
-    final followersCount = (seed % 9800) + 200;
-    final followingCount = (seed % 600) + 50;
+    return BlocBuilder<FollowBloc, FollowState>(
+      builder: (context, followState) {
+        int followersCount = 0;
+        int followingCount = 0;
 
-    return BlocBuilder<PostBloc, PostState>(
-      builder: (context, postState) {
-        final posts = postState is PostSuccess
-            ? postState.postResponseModel.posts
-            : <PostModel>[];
-        final postsCount = posts.length;
+        if (followState is FollowLoaded) {
+          followersCount = followState.followersCount;
+          followingCount = followState.followingCount;
+        }
 
-        return Scaffold(
-          backgroundColor: bg,
-          body: NestedScrollView(
-            headerSliverBuilder: (ctx, _) => [
-              // ── AppBar ──────────────────────────────────────────
-              SliverAppBar(
-                backgroundColor: bg,
-                elevation: 0,
-                pinned: true,
-                title: Text(
-                  widget.user.name,
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
-                    color: textPrimary,
-                  ),
-                ),
-                actions: [
-                  IconButton(
-                    icon: Icon(Icons.add_box_outlined, color: textPrimary),
-                    onPressed: () {},
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.menu_rounded, color: textPrimary),
-                    onPressed: () => _showSettingsSheet(context, isDark),
-                  ),
-                ],
-              ),
+        return BlocBuilder<PostBloc, PostState>(
+          builder: (context, postState) {
+            final posts = postState is PostSuccess
+                ? postState.postResponseModel.posts
+                : <PostModel>[];
+            final postsCount = posts.length;
 
-              // ── Profile header ──────────────────────────────────
-              SliverToBoxAdapter(
-                child: _ProfileHeader(
-                  user: widget.user,
-                  postsCount: postsCount,
-                  followersCount: followersCount,
-                  followingCount: followingCount,
-                  isDark: isDark,
-                ),
-              ),
-
-              // ── Story Highlights row ────────────────────────────
-              SliverToBoxAdapter(
-                child: _HighlightsRow(
-                  user: widget.user,
-                  textSecondary: textSecondary,
-                ),
-              ),
-
-              // ── Sticky Tab bar ──────────────────────────────────
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _TabBarDelegate(
-                  TabBar(
-                    controller: widget.tab,
-                    indicatorColor: textPrimary,
-                    indicatorWeight: 1.5,
-                    labelColor: textPrimary,
-                    unselectedLabelColor: textSecondary,
-                    tabs: const [
-                      Tab(icon: Icon(Icons.grid_on_rounded, size: 24)),
-                      Tab(
-                        icon: Icon(Icons.slow_motion_video_rounded, size: 24),
+            return Scaffold(
+              backgroundColor: bg,
+              body: NestedScrollView(
+                headerSliverBuilder: (ctx, _) => [
+                  // ── AppBar ──────────────────────────────────────────
+                  SliverAppBar(
+                    backgroundColor: bg,
+                    elevation: 0,
+                    pinned: true,
+                    title: Text(
+                      widget.user.name,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                        color: textPrimary,
                       ),
-                      Tab(
-                        icon: Icon(Icons.person_pin_circle_outlined, size: 24),
+                    ),
+                    actions: [
+                      IconButton(
+                        icon: Icon(Icons.add_box_outlined, color: textPrimary),
+                        onPressed: () {},
                       ),
-                      Tab(icon: Icon(Icons.repeat_rounded, size: 24)),
+                      IconButton(
+                        icon: Icon(Icons.menu_rounded, color: textPrimary),
+                        onPressed: () => _showSettingsSheet(context, isDark),
+                      ),
                     ],
                   ),
-                  color: bg,
+
+                  // ── Profile header ──────────────────────────────────
+                  SliverToBoxAdapter(
+                    child: _ProfileHeader(
+                      user: widget.user,
+                      postsCount: postsCount,
+                      followersCount: followersCount,
+                      followingCount: followingCount,
+                      isDark: isDark,
+                      onFollowersTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.transparent,
+                          isScrollControlled: true,
+                          builder: (_) => const FollowListBottomSheet(
+                            type: FollowListType.followers,
+                          ),
+                        );
+                      },
+                      onFollowingTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.transparent,
+                          isScrollControlled: true,
+                          builder: (_) => const FollowListBottomSheet(
+                            type: FollowListType.following,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // ── Story Highlights row ────────────────────────────
+                  SliverToBoxAdapter(
+                    child: _HighlightsRow(
+                      user: widget.user,
+                      textSecondary: textSecondary,
+                    ),
+                  ),
+
+                  // ── Sticky Tab bar ──────────────────────────────────
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _TabBarDelegate(
+                      TabBar(
+                        controller: widget.tab,
+                        indicatorColor: textPrimary,
+                        indicatorWeight: 1.5,
+                        labelColor: textPrimary,
+                        unselectedLabelColor: textSecondary,
+                        tabs: const [
+                          Tab(icon: Icon(Icons.grid_on_rounded, size: 24)),
+                          Tab(
+                            icon: Icon(
+                              Icons.slow_motion_video_rounded,
+                              size: 24,
+                            ),
+                          ),
+                          Tab(
+                            icon: Icon(
+                              Icons.person_pin_circle_outlined,
+                              size: 24,
+                            ),
+                          ),
+                          Tab(icon: Icon(Icons.repeat_rounded, size: 24)),
+                        ],
+                      ),
+                      color: bg,
+                    ),
+                  ),
+                ],
+                body: TabBarView(
+                  controller: widget.tab,
+                  children: [
+                    // ── Posts grid ────────────────────────────────────
+                    _PostsGrid(
+                      posts: posts,
+                      isLoading: postState is PostLoading,
+                      errorMessage: postState is PostFailure
+                          ? postState.message
+                          : null,
+                      textSecondary: textSecondary,
+                    ),
+
+                    // ── Reels placeholder ─────────────────────────────
+                    _EmptyTabContent(
+                      icon: Icons.slow_motion_video_rounded,
+                      label: 'No Reels yet',
+                      textSecondary: textSecondary,
+                    ),
+
+                    // ── Tagged placeholder ────────────────────────────
+                    _EmptyTabContent(
+                      icon: Icons.person_pin_circle_outlined,
+                      label: 'No tagged posts',
+                      textSecondary: textSecondary,
+                    ),
+
+                    // ── Reposts tab ────────────────────────────────────
+                    _RepostsTab(textSecondary: textSecondary),
+                  ],
                 ),
               ),
-            ],
-            body: TabBarView(
-              controller: widget.tab,
-              children: [
-                // ── Posts grid ────────────────────────────────────
-                _PostsGrid(
-                  posts: posts,
-                  isLoading: postState is PostLoading,
-                  errorMessage: postState is PostFailure
-                      ? postState.message
-                      : null,
-                  textSecondary: textSecondary,
-                ),
-
-                // ── Reels placeholder ─────────────────────────────
-                _EmptyTabContent(
-                  icon: Icons.slow_motion_video_rounded,
-                  label: 'No Reels yet',
-                  textSecondary: textSecondary,
-                ),
-
-                // ── Tagged placeholder ────────────────────────────
-                _EmptyTabContent(
-                  icon: Icons.person_pin_circle_outlined,
-                  label: 'No tagged posts',
-                  textSecondary: textSecondary,
-                ),
-
-                // ── Reposts tab ────────────────────────────────────
-                _RepostsTab(textSecondary: textSecondary),
-              ],
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -262,6 +306,8 @@ class _ProfileHeader extends StatelessWidget {
   final AuthModel user;
   final int postsCount, followersCount, followingCount;
   final bool isDark;
+  final VoidCallback? onFollowersTap;
+  final VoidCallback? onFollowingTap;
 
   const _ProfileHeader({
     required this.user,
@@ -269,6 +315,8 @@ class _ProfileHeader extends StatelessWidget {
     required this.followersCount,
     required this.followingCount,
     required this.isDark,
+    this.onFollowersTap,
+    this.onFollowingTap,
   });
 
   @override
@@ -305,10 +353,12 @@ class _ProfileHeader extends StatelessWidget {
                     ProfileStatColumn(
                       value: formatStatCount(followersCount),
                       label: 'Followers',
+                      onTap: onFollowersTap,
                     ),
                     ProfileStatColumn(
                       value: formatStatCount(followingCount),
                       label: 'Following',
+                      onTap: onFollowingTap,
                     ),
                   ],
                 ),

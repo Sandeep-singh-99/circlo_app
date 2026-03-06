@@ -4,6 +4,9 @@ import 'package:circlo_app/features/post/models/post_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:circlo_app/features/follow/bloc/follow_bloc.dart';
+import 'package:circlo_app/features/follow/bloc/follow_event.dart';
+import 'package:circlo_app/features/follow/bloc/follow_state.dart';
 
 class FeedPostHeader extends StatelessWidget {
   final PostModel post;
@@ -71,33 +74,61 @@ class FeedPostHeader extends StatelessWidget {
           ),
 
           // Follow pill — hidden for your own posts
-          if (!isOwnPost) ...[
-            GestureDetector(
-              onTap: () {},
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: const Color(0xFF6C63FF),
-                    width: 1.5,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Follow',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF6C63FF),
-                  ),
-                ),
-              ),
+          if (!isOwnPost && post.user?.id != null)
+            BlocBuilder<FollowBloc, FollowState>(
+              builder: (context, state) {
+                bool isFollowing = false;
+                if (state is FollowLoaded) {
+                  isFollowing = state.following.any(
+                    (f) => f.id == post.user!.id,
+                  );
+                }
+
+                return Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        context.read<FollowBloc>().add(
+                          ToggleFollowRequested(post.user!.id!),
+                        );
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isFollowing
+                              ? (isDark
+                                    ? const Color(0xFF2C2C2E)
+                                    : const Color(0xFFE5E5EA))
+                              : null,
+                          border: Border.all(
+                            color: isFollowing
+                                ? Colors.transparent
+                                : const Color(0xFF6C63FF),
+                            width: 1.5,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          isFollowing ? 'Following' : 'Follow',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isFollowing
+                                ? textPrimary
+                                : const Color(0xFF6C63FF),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                );
+              },
             ),
-            const SizedBox(width: 6),
-          ],
 
           // More button
           GestureDetector(
