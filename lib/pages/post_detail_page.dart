@@ -180,75 +180,73 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Widget _buildContent(PostModel post, bool isDark) {
     final divider = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E5EA);
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          FeedPostCard(post: post, isDetail: true),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FeedPostCard(post: post, isDetail: true),
 
-          Divider(height: 1, thickness: 0.5, color: divider),
+        Divider(height: 1, thickness: 0.5, color: divider),
 
-          // Comments header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
-            child: Text(
-              'Comments',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white : Colors.black87,
-              ),
+        // Comments header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+          child: Text(
+            'Comments',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
+        ),
 
-          BlocBuilder<CommentBloc, CommentState>(
-            builder: (context, state) {
-              if (state is CommentLoading) {
-                return const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Color(0xFF0095F6),
-                    ),
+        BlocBuilder<CommentBloc, CommentState>(
+          builder: (context, state) {
+            if (state is CommentLoading) {
+              return const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFF0095F6),
                   ),
-                );
-              }
+                ),
+              );
+            }
 
-              if (state is CommentError) {
+            if (state is CommentError) {
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Failed to load comments',
+                  style: GoogleFonts.inter(
+                    color: Colors.redAccent,
+                    fontSize: 13,
+                  ),
+                ),
+              );
+            }
+
+            if (state is CommentLoaded) {
+              if (state.comments.isEmpty) {
                 return Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 28,
+                  ),
                   child: Text(
-                    'Failed to load comments',
+                    'No comments yet. Be the first!',
                     style: GoogleFonts.inter(
-                      color: Colors.redAccent,
-                      fontSize: 13,
+                      fontSize: 14,
+                      color: isDark ? Colors.grey[500] : Colors.grey[500],
                     ),
                   ),
                 );
               }
 
-              if (state is CommentLoaded) {
-                if (state.comments.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 28,
-                    ),
-                    child: Text(
-                      'No comments yet. Be the first!',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: isDark ? Colors.grey[500] : Colors.grey[500],
-                      ),
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
+              return Expanded(
+                child: ListView.builder(
+                  physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.only(top: 8, bottom: 24),
                   itemCount: state.comments.length,
                   itemBuilder: (context, index) {
@@ -274,14 +272,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       ),
                     );
                   },
-                );
-              }
+                ),
+              );
+            }
 
-              return const SizedBox();
-            },
-          ),
-        ],
-      ),
+            return const SizedBox();
+          },
+        ),
+      ],
     );
   }
 
