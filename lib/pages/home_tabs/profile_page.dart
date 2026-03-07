@@ -155,7 +155,7 @@ class _ProfileContentState extends State<_ProfileContent> {
 
         return BlocBuilder<PostBloc, PostState>(
           builder: (context, postState) {
-            final posts = postState is PostSuccess
+            final posts = postState is OwnPostSuccess
                 ? postState.postResponseModel.posts
                 : <PostModel>[];
             final postsCount = posts.length;

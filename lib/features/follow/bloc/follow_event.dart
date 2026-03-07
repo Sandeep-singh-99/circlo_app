@@ -14,3 +14,7 @@ class ToggleFollowRequested extends FollowEvent {
   final String targetUserId;
   ToggleFollowRequested(this.targetUserId);
 }
+
+/// Fired on logout — resets follow state so the previous user's
+/// followers/following are not visible after an account switch.
+class FollowResetRequested extends FollowEvent {}

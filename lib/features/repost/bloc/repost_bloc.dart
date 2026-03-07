@@ -9,6 +9,7 @@ class RepostBloc extends Bloc<RepostEvent, RepostState> {
   RepostBloc(this._repostRepository) : super(RepostInitial()) {
     on<ToggleRepost>(_onToggleRepost);
     on<GetRepostsRequested>(_onGetReposts);
+    on<RepostResetRequested>((_, emit) => emit(RepostInitial()));
   }
 
   Future<void> _onToggleRepost(

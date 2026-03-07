@@ -8,6 +8,7 @@ class BookmarkBloc extends Bloc<BookmarkEvent, BookmarkState> {
 
   BookmarkBloc(this._bookmarkRepository) : super(BookmarkInitial()) {
     on<ToggleBookmark>(_onToggleBookmark);
+    on<BookmarkResetRequested>((_, emit) => emit(BookmarkInitial()));
   }
 
   Future<void> _onToggleBookmark(

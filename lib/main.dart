@@ -6,16 +6,20 @@ import 'package:circlo_app/features/auth/repository/auth_repository.dart';
 import 'package:circlo_app/features/bio/bloc/bio_bloc.dart';
 import 'package:circlo_app/features/bio/repository/bio_repository.dart';
 import 'package:circlo_app/features/bookmark/bloc/bookmark_bloc.dart';
+import 'package:circlo_app/features/bookmark/bloc/bookmark_event.dart';
 import 'package:circlo_app/features/bookmark/repository/bookmark_repository.dart';
 import 'package:circlo_app/features/comment/bloc/comment_bloc.dart';
 import 'package:circlo_app/features/comment/repository/comment_repository.dart';
 import 'package:circlo_app/features/like/bloc/like_bloc.dart';
 import 'package:circlo_app/features/like/repository/like_repository.dart';
 import 'package:circlo_app/features/post/bloc/post_bloc.dart';
+import 'package:circlo_app/features/post/bloc/post_event.dart';
 import 'package:circlo_app/features/post/repository/post_repository.dart';
 import 'package:circlo_app/features/repost/bloc/repost_bloc.dart';
+import 'package:circlo_app/features/repost/bloc/repost_event.dart';
 import 'package:circlo_app/features/repost/repository/repost_repository.dart';
 import 'package:circlo_app/features/follow/bloc/follow_bloc.dart';
+import 'package:circlo_app/features/follow/bloc/follow_event.dart';
 import 'package:circlo_app/features/follow/repository/follow_repository.dart';
 import 'package:circlo_app/features/theme/theme_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -97,6 +101,17 @@ class _MyAppState extends State<MyApp> {
                         margin: const EdgeInsets.all(16),
                       ),
                     );
+                  }
+
+                  // ── Clear all user-specific data on logout ─────────
+                  // Without this, switching accounts would show the
+                  // previous user's posts, reposts, followers, and
+                  // bookmarks until the new user's data loads.
+                  if (state is AuthUnauthenticated) {
+                    context.read<PostBloc>().add(PostResetRequested());
+                    context.read<RepostBloc>().add(RepostResetRequested());
+                    context.read<FollowBloc>().add(FollowResetRequested());
+                    context.read<BookmarkBloc>().add(BookmarkResetRequested());
                   }
                 },
                 child: child!,

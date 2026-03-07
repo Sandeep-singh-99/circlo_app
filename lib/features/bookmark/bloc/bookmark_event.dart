@@ -6,4 +6,6 @@ class ToggleBookmark extends BookmarkEvent {
   ToggleBookmark(this.id);
 }
 
-
+/// Fired on logout — resets bookmark state so the previous user's
+/// bookmarks are not visible after an account switch.
+class BookmarkResetRequested extends BookmarkEvent {}

@@ -7,10 +7,18 @@ class PostStateInitial extends PostState {}
 
 class PostLoading extends PostState {}
 
-class PostSuccess extends PostState {
+/// Emitted after [PostGetAllRequested] — powers the feed.
+class AllPostSuccess extends PostState {
   final PostResponseModel postResponseModel;
 
-  PostSuccess(this.postResponseModel);
+  AllPostSuccess(this.postResponseModel);
+}
+
+/// Emitted after [PostGetOwnRequested] — powers the profile grid.
+class OwnPostSuccess extends PostState {
+  final PostResponseModel postResponseModel;
+
+  OwnPostSuccess(this.postResponseModel);
 }
 
 class PostFailure extends PostState {

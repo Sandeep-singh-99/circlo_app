@@ -101,7 +101,7 @@ class _FeedPageState extends State<FeedPage>
           buildWhen: (prev, curr) =>
               curr is PostStateInitial ||
               curr is PostLoading ||
-              curr is PostSuccess ||
+              curr is AllPostSuccess ||
               curr is PostFailure,
           builder: (context, state) {
             if (state is PostLoading || state is PostStateInitial) {
@@ -112,7 +112,7 @@ class _FeedPageState extends State<FeedPage>
               return _buildErrorState(state.message, fgColor, isDark);
             }
 
-            if (state is PostSuccess) {
+            if (state is AllPostSuccess) {
               final posts = state.postResponseModel.posts;
 
               if (posts.isEmpty) {

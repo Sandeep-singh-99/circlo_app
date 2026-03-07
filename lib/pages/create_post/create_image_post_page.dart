@@ -125,7 +125,7 @@ class _CreateImagePostPageState extends State<CreateImagePostPage> {
         } else {
           setState(() => _isPosting = false);
         }
-        if (state is PostSuccess) {
+        if (state is AllPostSuccess) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Post shared successfully!')),

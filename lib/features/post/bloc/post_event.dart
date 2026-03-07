@@ -24,3 +24,7 @@ class PostGetByIdRequested extends PostEvent {
 }
 
 class PostGetOwnRequested extends PostEvent {}
+
+/// Fired on logout — resets the bloc back to its initial state so a
+/// different user's posts are never shown after an account switch.
+class PostResetRequested extends PostEvent {}

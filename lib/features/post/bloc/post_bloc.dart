@@ -13,6 +13,7 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     on<PostDeleteRequested>(_onPostDeleteRequested);
     on<PostGetByIdRequested>(_onPostGetByIdRequested);
     on<PostGetOwnRequested>(_onPostGetOwnRequested);
+    on<PostResetRequested>((_, emit) => emit(PostStateInitial()));
   }
 
   Future<void> _onPostCreateRequested(
@@ -24,7 +25,7 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       await _postRepository.createPost(event.content, event.image);
       // Refresh the feed after successful creation
       final allPosts = await _postRepository.getPost();
-      emit(PostSuccess(allPosts));
+      emit(AllPostSuccess(allPosts));
     } catch (e) {
       emit(PostFailure(e.toString()));
     }
@@ -37,7 +38,7 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     emit(PostLoading());
     try {
       final response = await _postRepository.getPost();
-      emit(PostSuccess(response));
+      emit(AllPostSuccess(response));
     } catch (e, st) {
       debugPrint('PostGetAllRequested error: $e\n$st');
       emit(PostFailure(e.toString()));
@@ -53,7 +54,7 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       await _postRepository.deletePost(event.id);
       // After deleting, re-fetch own posts so the profile grid stays accurate
       final ownPosts = await _postRepository.getOwnPosts();
-      emit(PostSuccess(ownPosts));
+      emit(OwnPostSuccess(ownPosts));
     } catch (e) {
       emit(PostFailure(e.toString()));
     }
@@ -84,7 +85,7 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     emit(PostLoading());
     try {
       final response = await _postRepository.getOwnPosts();
-      emit(PostSuccess(response));
+      emit(OwnPostSuccess(response));
     } catch (e) {
       emit(PostFailure(e.toString()));
     }

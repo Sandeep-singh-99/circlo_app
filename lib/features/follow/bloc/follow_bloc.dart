@@ -12,6 +12,10 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
     on<GetFollowersRequested>(_onGetFollowersRequested);
     on<GetFollowingRequested>(_onGetFollowingRequested);
     on<ToggleFollowRequested>(_onToggleFollowRequested);
+    on<FollowResetRequested>((_, emit) {
+      _lastRequestedUserId = null;
+      emit(FollowInitial());
+    });
   }
 
   Future<void> _onGetFollowersRequested(
